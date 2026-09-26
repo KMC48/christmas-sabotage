@@ -315,7 +315,12 @@
     tree: 104, bigtree: 186, heart: 98, tunnel: 208, photo: 96,
     booth: 84, wreath: 92, window: 88, water: 46, led: 96,
   };
-  const CHAR_H = { player_agent: 64, npc_guard: 62, npc_couple: 66, npc_crowd: 54 };
+  const CHAR_H = {
+    player_agent: 64, npc_guard: 62, npc_couple: 66, npc_crowd: 54,
+    /* 追補ポーズは腕の上げ方・しゃがみで全身の高さが変わるので、体の大きさが揃うよう個別に指定 */
+    npc_couple_photo: 72, npc_couple_toast: 66, npc_couple_tunnel: 70, npc_couple_star: 74,
+    npc_guard_check: 62, player_agent_work: 54,
+  };
   /* イベント種別 → 予告ポーズ素材（未納品なら既存の立ち絵で代用） */
   const POSE_KEY = {
     photo: 'npc_couple_photo', wreath: 'npc_couple_photo',
@@ -1696,7 +1701,7 @@
     glow('cold', p.x, p.y - 20 + bob, 32, 0.16);
     const working = G.action && G.action.phase === 'work';
     if (working && IMG.player_agent_work
-        && drawTrimmed('player_agent_work', p.x, p.y + 5, CHAR_H.player_agent)) {
+        && drawTrimmed('player_agent_work', p.x, p.y + 5, CHAR_H.player_agent_work)) {
       /* 工作ポーズ素材がある場合はそのまま */
     } else if (drawTrimmed('player_agent', p.x, p.y + 5 + bob, CHAR_H.player_agent)) {
       dot(p.x + 5, p.y - CHAR_H.player_agent * 0.78 + bob, 1.7, '#FF4A5C');   // イヤホンのLED
@@ -1735,7 +1740,7 @@
     } else {
       const checking = g.inv !== 'patrol';
       if (checking && IMG.npc_guard_check) {
-        drawTrimmed('npc_guard_check', g.x, g.y + 4, CHAR_H.npc_guard);
+        drawTrimmed('npc_guard_check', g.x, g.y + 4, CHAR_H.npc_guard_check);
       } else if (!drawTrimmed('npc_guard', g.x, g.y + 4, CHAR_H.npc_guard)) {
         ctx.fillStyle = hot > 0.2 ? '#4A2030' : '#1C2740';
         ctx.beginPath(); ctx.moveTo(g.x - 12, g.y); ctx.lineTo(g.x - 9, g.y - 30);
@@ -1790,7 +1795,7 @@
     const posing = ev && (ev.phase === 'windup' || ev.phase === 'beat');
     const poseKey = posing ? POSE_KEY[ev.def.type] : null;
     if (poseKey && IMG[poseKey]) {
-      drawTrimmed(poseKey, c.x, c.y + 4, CHAR_H.npc_couple);
+      drawTrimmed(poseKey, c.x, c.y + 4, CHAR_H[poseKey] || CHAR_H.npc_couple);
     } else {
       /* 専用ポーズ素材が無い場合は、既存の立ち絵を軽く傾けて「構えた」ことを示す */
       const lean = c.pose * 0.12;
@@ -1855,7 +1860,9 @@
   /* カップルの頭上に出る合図（アイコン＋短い言葉） */
   function drawCue(ev, c) {
     const s = clamp(c.pose, 0, 1);
-    const y = c.y - CHAR_H.npc_couple - 16;
+    const poseKey = POSE_KEY[ev.def.type];
+    const ch = (IMG[poseKey] && CHAR_H[poseKey]) || CHAR_H.npc_couple;
+    const y = c.y - ch - 18;
     ctx.font = '700 21px "Noto Sans JP", sans-serif';
     ctx.textAlign = 'left';
     const tw = ctx.measureText(ev.cue).width;

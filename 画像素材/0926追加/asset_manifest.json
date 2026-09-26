@@ -1,0 +1,64 @@
+{
+  "assets": [
+    {
+      "filename": "npc_couple_photo.png",
+      "width": 335,
+      "height": 512,
+      "format": "RGBA PNG",
+      "transparent_fraction": 0.4304,
+      "sha256": "dbc26ae3cbbe5f2b4994c3ba7d70a47e7442f5897723e36bff57f12b721953bf",
+      "label": "自撮りの予告（STAGE1・2）"
+    },
+    {
+      "filename": "npc_couple_toast.png",
+      "width": 304,
+      "height": 512,
+      "format": "RGBA PNG",
+      "transparent_fraction": 0.3514,
+      "sha256": "73a5a954b07e7185a81e27ae64a68582cf895448499e2f91d85e41acf13228e0",
+      "label": "乾杯の予告（STAGE3）"
+    },
+    {
+      "filename": "npc_couple_tunnel.png",
+      "width": 412,
+      "height": 512,
+      "format": "RGBA PNG",
+      "transparent_fraction": 0.508,
+      "sha256": "09ab2c3b63054017dfac3a13255139e9255e786eed53918753435981ba6ca4a0",
+      "label": "手をつないで踏み出す（STAGE4）"
+    },
+    {
+      "filename": "npc_couple_star.png",
+      "width": 345,
+      "height": 512,
+      "format": "RGBA PNG",
+      "transparent_fraction": 0.389,
+      "sha256": "25055e52e161935a0ecd238b14c699958ca7d13c212065b42b762cb33f8cc2c9",
+      "label": "上を見上げて指差す（STAGE5）"
+    },
+    {
+      "filename": "npc_guard_check.png",
+      "width": 226,
+      "height": 512,
+      "format": "RGBA PNG",
+      "transparent_fraction": 0.5131,
+      "sha256": "2bbbdec0e07bd76f0b716676130479acdfc4f335744dfaec11c27d6031e0633a",
+      "label": "懐中電灯で調査する警備員"
+    },
+    {
+      "filename": "player_agent_work.png",
+      "width": 491,
+      "height": 512,
+      "format": "RGBA PNG",
+      "transparent_fraction": 0.4796,
+      "sha256": "3817a4527003657072f13683c7fbb5cd37984907be2ac6a240e4cca5347335fb",
+      "label": "片膝をついて工作する主人公"
+    }
+  ],
+  "generation_mode": "built-in image generation; authorized background removal and trimming",
+  "reference_assets": [
+    "npc_couple.png",
+    "npc_guard.png",
+    "player_agent.png"
+  ]
+}

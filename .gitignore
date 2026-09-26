@@ -1,0 +1,11 @@
+# OneDrive / Windows
+desktop.ini
+Thumbs.db
+*.tmp
+
+# Python
+__pycache__/
+*.pyc
+
+# 作業中の一時出力
+game/assets/*_orig.png

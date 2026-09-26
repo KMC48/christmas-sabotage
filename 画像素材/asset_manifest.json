@@ -1,0 +1,204 @@
+{
+  "title": "クリスマス粉砕大作戦",
+  "asset_count": 21,
+  "assets": [
+    {
+      "filename": "player_agent.png",
+      "label": "Player",
+      "width": 512,
+      "height": 512,
+      "transparent": true,
+      "anchor": "bottom-center",
+      "sha256": "7dee2358139948656ae4d67337ff54248c7d1412331accc31bf54c8a6956660c"
+    },
+    {
+      "filename": "npc_guard.png",
+      "label": "Guard",
+      "width": 512,
+      "height": 512,
+      "transparent": true,
+      "anchor": "bottom-center",
+      "sha256": "0413071992d94c3c9db8b229fb1a873cc42e825c57c3d4a520967393816cc0ee"
+    },
+    {
+      "filename": "npc_couple.png",
+      "label": "Couple",
+      "width": 640,
+      "height": 512,
+      "transparent": true,
+      "anchor": "bottom-center",
+      "sha256": "77e59cf0fd250a6ed75793906392ee297df1edc9b6e503cdc2402542be24b452"
+    },
+    {
+      "filename": "npc_crowd.png",
+      "label": "Pedestrian",
+      "width": 512,
+      "height": 512,
+      "transparent": true,
+      "anchor": "bottom-center",
+      "sha256": "719264fb7fb7fa87a3bad07d740050a4065c186b651351ba35d93efb0e835ce4"
+    },
+    {
+      "filename": "prop_tree.png",
+      "label": "Street tree",
+      "width": 512,
+      "height": 512,
+      "transparent": true,
+      "anchor": "bottom-center",
+      "sha256": "ea0cca1b8839ddcda6f5b9cd5e14bbcefff5d2d3d7b8d10392893bdf90b45dbf"
+    },
+    {
+      "filename": "prop_bigtree.png",
+      "label": "Christmas tree",
+      "width": 640,
+      "height": 1024,
+      "transparent": true,
+      "anchor": "bottom-center",
+      "sha256": "485a8e92fe9e29578ad549a3fb9112fa9a4c9e175e1f9f574ea594d898eb7003"
+    },
+    {
+      "filename": "prop_heart.png",
+      "label": "Heart lights",
+      "width": 512,
+      "height": 512,
+      "transparent": true,
+      "anchor": "bottom-center",
+      "sha256": "545fd2f6387ef9ab5bf2038d09a7f46185839564091a23fd7c77f7941095fa60"
+    },
+    {
+      "filename": "prop_tunnel.png",
+      "label": "Light tunnel",
+      "width": 1024,
+      "height": 768,
+      "transparent": true,
+      "anchor": "bottom-center",
+      "sha256": "656ee21e5011f99776eb86867a4dcdab65e1300db3e095ed10178430dffa28c4"
+    },
+    {
+      "filename": "prop_photospot.png",
+      "label": "Photo spot",
+      "width": 512,
+      "height": 512,
+      "transparent": true,
+      "anchor": "bottom-center",
+      "sha256": "060e8fd63675edcd6b4c1834b73d085a695b8980b53a69490c37ec219a9b61d5"
+    },
+    {
+      "filename": "prop_booth.png",
+      "label": "Market booth",
+      "width": 640,
+      "height": 512,
+      "transparent": true,
+      "anchor": "bottom-center",
+      "sha256": "37b923df55b76903aadf5880fc9283c95aacd2c2739dbcef6e947c983a0c1258"
+    },
+    {
+      "filename": "prop_wreath.png",
+      "label": "Wreath",
+      "width": 512,
+      "height": 512,
+      "transparent": true,
+      "anchor": "bottom-center",
+      "sha256": "3df918f7376561776db215b9b85083e563e2a114ffee32d0e2412035e8ad55bb"
+    },
+    {
+      "filename": "prop_window.png",
+      "label": "Restaurant window",
+      "width": 512,
+      "height": 512,
+      "transparent": true,
+      "anchor": "bottom-center",
+      "sha256": "93c82b05dc63aaff18e40e8cef920bb0c9f1617866a479071f04441fc83861cf"
+    },
+    {
+      "filename": "prop_water.png",
+      "label": "Water lights",
+      "width": 512,
+      "height": 256,
+      "transparent": true,
+      "anchor": "bottom-center",
+      "sha256": "482a2203c0c1e20effa4e6fc06cc6262752a2968549aa4cfcf08ac2bccb080e7"
+    },
+    {
+      "filename": "prop_led.png",
+      "label": "LED screen",
+      "width": 512,
+      "height": 512,
+      "transparent": true,
+      "anchor": "bottom-center",
+      "sha256": "ecb5aea42cd14f88f2beb1d032264c0e956e97319c09e91b07d397be3995e1c9"
+    },
+    {
+      "filename": "bg_stage1.png",
+      "label": "Avenue ground",
+      "width": 1080,
+      "height": 4200,
+      "transparent": false,
+      "anchor": null,
+      "sha256": "668d8bc697572dc906c1d263c44ee02fad4c5086a3841f83110abd911ca8a8b4"
+    },
+    {
+      "filename": "bg_stage2.png",
+      "label": "Market ground",
+      "width": 1080,
+      "height": 4400,
+      "transparent": false,
+      "anchor": null,
+      "sha256": "b633606ae1d22110c4ae626cfda795b262fcb1ad28a0ac86e2299a930b85b095"
+    },
+    {
+      "filename": "bg_stage3.png",
+      "label": "Restaurant floor",
+      "width": 1080,
+      "height": 4300,
+      "transparent": false,
+      "anchor": null,
+      "sha256": "343517c068d021df46059c64a18408ab6dcc291e068319d77d6a23792f861577"
+    },
+    {
+      "filename": "bg_stage4.png",
+      "label": "Seaside park",
+      "width": 1080,
+      "height": 4600,
+      "transparent": false,
+      "anchor": null,
+      "sha256": "116e92a4daf0a706d911b58e4deea9e52489d2a01d0022070000b2a14dcf7d39"
+    },
+    {
+      "filename": "bg_stage5.png",
+      "label": "Observation deck",
+      "width": 1080,
+      "height": 4500,
+      "transparent": false,
+      "anchor": null,
+      "sha256": "565c1efbe768bad5ca55c86d3b1ff5209f025daf0116f3a8c06158925ecbbc40"
+    },
+    {
+      "filename": "icon_1024.png",
+      "label": "App icon",
+      "width": 1024,
+      "height": 1024,
+      "transparent": false,
+      "anchor": null,
+      "sha256": "e66ca07950f6805e47537b914f21c5b16a267e7c2dd45086c1c7bcfcaf6e6615"
+    },
+    {
+      "filename": "title_key.png",
+      "label": "Title artwork",
+      "width": 1080,
+      "height": 1920,
+      "transparent": false,
+      "anchor": null,
+      "sha256": "777706826d0557a7ce740487429adbc67a3a3374a18199a7791bece44cac7ee7"
+    }
+  ],
+  "extra_assets": [
+    {
+      "filename": "extras/title_key_fullbody_01.png",
+      "width": 1080,
+      "height": 1920,
+      "transparent": false,
+      "sha256": "3c8aa1710fe62390676930ed970c29458de260ef5a9cd9f7ec59d436c1102b8e"
+    }
+  ]
+}

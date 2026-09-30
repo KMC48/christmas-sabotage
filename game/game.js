@@ -22,8 +22,12 @@
   const TIME_BONUS = 50;                  // 残り1秒あたり
 
   /* ---------- 調整パラメータ（数値はここだけで調整する） ---------- */
-  const RULES_VERSION = 3;                // スコア記録のルール版（v3：デートの結末が1プレイ1回で確定する）
+  const RULES_VERSION = 4;                // スコア記録のルール版（v4：全イルミ工作でクリア・時間延長イルミ）
   const CFG = {
+    /* v4：クリア条件は「フィールドのイルミをすべて工作」。特別なイルミ（金色のトナカイ）で制限時間が延びる */
+    bonusSec: 10,
+    fever: { combo: 10, mul: 0.7 },   // 10連鎖以上は工作時間 ×0.7（3連鎖以上は従来どおり ×0.84）
+    mobReactR: 170,                   // この距離の通行カップルは、近くの消灯で冷める
     event: {
       radius: 260,        // 予告が起動するプレイヤー→対象の距離
       windup: 3.0,        // 予告の長さ。基準時刻 = windup
@@ -64,8 +68,13 @@
       lineA: 1.8,         // 女性「……もう、終わりにしよう」
       lineB: 2.4,         // 男性「……ああ」
       art: 3.0,           // 3.0〜4.5 最終絵
-      hero: 4.5,          // 4.5〜5.5 主人公「任務、完了」
-      end: 5.5,           // 以降はタップ待ち
+      hero: 4.5,          // 4.5〜6.0 主人公「任務、完了」
+      /* v4：別れたふたりが復縁し、特別ステージが出現する */
+      revival: 6.2,       // 暗転から、ふたりが戻ってくる
+      revLineA: 6.9,      // 女性「……やっぱり、諦めきれない」
+      revLineB: 7.8,      // 男性「意地でも、クリスマスデートをする！」
+      revBanner: 8.8,     // 「特別ステージ出現」
+      end: 9.8,           // 以降はタップ待ち
       skipAfter: 0.25,
     },
     /* ラブラブオーラ：照明で増幅された「圧」。対応灯を消すと消える通行障害 */
@@ -115,7 +124,12 @@
     wreath:  { name: '巨大リース',     mood: 12, dur: 0.60, score: 520, effect: 'partial' },
     window:  { name: '窓際照明',       mood: 10, dur: 0.50, score: 420, effect: 'white'   },
     water:   { name: '水面ライト',     mood: 10, dur: 0.50, score: 420, effect: 'off'     },
-    led:     { name: '大型LED演出',    mood: 15, dur: 0.70, score: 650, effect: 'white'   },
+    led:     { name: '大型LED演出',    mood: 15, dur: 0.70, score: 650, effect: 'white'   },   // v4では配置しない
+    /* v4：クリスマスならではの装飾 */
+    reindeer: { name: '金色のトナカイ', mood: 15, dur: 0.70, score: 700, effect: 'white', bonus: true },  // 工作で制限時間+10秒
+    gift:     { name: 'プレゼントのイルミ', mood: 12, dur: 0.55, score: 500, effect: 'off'   },
+    snowman:  { name: '雪だるまのイルミ',   mood: 10, dur: 0.50, score: 450, effect: 'white' },
+    bluetree: { name: '青いLED並木',       mood: 3,  dur: 0.25, score: 150, effect: 'off'   },  // 特別ステージ用
   };
 
   /* NPCリアクション（1〜2秒で消える短文のみ） */
@@ -129,13 +143,52 @@
 
   /* ---------- ステージデータ ---------- */
   const T = (t, x, y, opt) => Object.assign({ type: t, x: x, y: y }, opt || {});
+
+  /* 特別ステージ「青の回廊」：街じゅうが青いLEDで埋まった通り。膨大な数を工作する延長戦 */
+  const SPECIAL_STAGE = (() => {
+    const targets = [];
+    for (let y = 3150; y >= 450; y -= 100) targets.push(T('bluetree', 100, y), T('bluetree', 440, y));   // 56本
+    [[270, 2900, 'gift'], [270, 2500, 'snowman'], [270, 2100, 'heart'],
+     [270, 1700, 'gift'], [270, 1300, 'snowman'], [270, 900, 'heart']].forEach((a) => targets.push(T(a[2], a[0], a[1])));
+    [3050, 2300, 1500, 700].forEach((y) => targets.push(T('reindeer', 270, y)));                        // 時間延長 ×4
+    targets.push(T('bigtree', 270, 330));                                                               // 最後の大型ツリー
+    const idx = (type, y) => targets.findIndex((t) => t.type === type && t.y === y);
+    return {
+      id: 6, special: true, name: '青の回廊', theme: '意地のクリスマスデート', style: 'blue',
+      time: 80, worldH: 3400, start: { x: 270, y: 3300 },
+      rank: { S: 400000, A: 250000, B: 140000 },
+      targets: targets,
+      obstacles: [{ x: 210, y: 2740, w: 120, h: 40 }, { x: 210, y: 1940, w: 120, h: 40 }, { x: 210, y: 1140, w: 120, h: 40 }],
+      guards: [
+        { x: 270, y: 2400, type: 'guard', mode: 'patrol', pts: [[150, 2400], [390, 2400]], spd: 60, range: 200, fov: 0.48 },
+        { x: 270, y: 1600, type: 'guard', mode: 'patrol', pts: [[390, 1600], [150, 1600]], spd: 64, range: 200, fov: 0.48 },
+        { x: 30, y: 2000, type: 'cam', dir: 0.2, amp: 0.8, spd: 0.7, range: 240, fov: 0.42 },
+        { x: 510, y: 1000, type: 'cam', dir: 2.9, amp: 0.8, spd: 0.8, range: 240, fov: 0.42 },
+      ],
+      couples: [
+        { pts: [[340, 2620]], spd: 0 },
+        { pts: [[200, 1620]], spd: 0 },
+        { pts: [[200, 430], [340, 430]], spd: 12 },          // 復縁したふたり
+      ],
+      mobs: 10,
+      investigate: true,
+      auras: [
+        { id: 's6_aura_a', couple: 0, source: idx('gift', 2900) },
+        { id: 's6_aura_b', couple: 1, source: idx('snowman', 1300) },
+      ],
+      events: [{
+        id: 's6_star', type: 'star', target: targets.length - 1, couple: 2,
+        cues: ['星の下で、もう一度', '3', '2', '1'], payoff: 'もう……帰ろうか',
+      }],
+    };
+  })();
   const STAGES = [
     {
       /* v2：8対象・ムード倍率1.5。6〜7回の工作でクリアできる短い導入に作り替えた */
       id: 1, name: '光の並木道', theme: '待ち合わせ', style: 'street',
-      time: 90, worldH: 2100, start: { x: 270, y: 1980 }, tutorial: true,
+      time: 70, worldH: 2100, start: { x: 270, y: 1980 }, tutorial: true,
       moodMul: 1.5,
-      rank: { S: 9000, A: 6800, B: 4600 },
+      rank: { S: 17000, A: 11000, B: 6000 },
       targets: [
         T('tree', 110, 1850),      // 0 出発地点から見える最初の1本
         T('heart', 430, 1690),     // 1
@@ -144,12 +197,13 @@
         T('heart', 110, 1130),     // 4
         T('tree', 440, 1000),      // 5
         T('photo', 250, 790),      // 6 通常のフォトスポット
-        T('bigtree', 270, 430),    // 7 見せ場。必須の最終対象にはしない
+        T('bigtree', 270, 430),    // 7 見せ場
+        T('reindeer', 440, 1400),  // 8 金色のトナカイ（+10秒）
       ],
       obstacles: [{ x: 212, y: 1745, w: 46, h: 58 }, { x: 322, y: 1070, w: 50, h: 56 }],
       guards: [{ x: 452, y: 470, type: 'cam', dir: 2.3, amp: 0.75, spd: 0.6, range: 235, fov: 0.42 }],
       couples: [{ pts: [[185, 1405]], spd: 0 }],   // フォトスポット脇で立ち止まる
-      crowd: 0,
+      mobs: 3,
       /* 迂回もできる位置に1つ。左の街路樹を消すと近道になることを学ぶ */
       auras: [{ id: 's1_aura', couple: 0, source: 2 }],
       events: [{
@@ -159,8 +213,8 @@
     },
     {
       id: 2, name: 'クリスマスマーケット', theme: '食べ歩きデート', style: 'market',
-      time: 85, worldH: 2200, start: { x: 270, y: 2080 },
-      rank: { S: 11500, A: 8600, B: 5800 },
+      time: 65, worldH: 2200, start: { x: 270, y: 2080 },
+      rank: { S: 27000, A: 17500, B: 10000 },
       targets: [
         T('booth', 96, 1930), T('booth', 444, 1870), T('booth', 96, 1680),
         T('wreath', 270, 1540),
@@ -170,6 +224,7 @@
         T('wreath', 430, 760),
         T('photo', 150, 620),
         T('bigtree', 300, 360),
+        T('reindeer', 230, 1180),
       ],
       obstacles: [
         { x: 200, y: 1800, w: 140, h: 44 }, { x: 150, y: 1480, w: 120, h: 44 },
@@ -180,7 +235,7 @@
         { x: 470, y: 520, type: 'cam', dir: 2.6, amp: 0.7, spd: 0.75, range: 240, fov: 0.4 },
       ],
       couples: [{ pts: [[190, 1640], [340, 1562]], spd: 18 }, { pts: [[120, 940]], spd: 0 }],
-      crowd: 10,
+      mobs: 8,
       auras: [{ id: 's2_aura', couple: 1, source: 8 }],
       investigate: true,
       events: [{
@@ -190,8 +245,8 @@
     },
     {
       id: 3, name: '夜景レストラン', theme: 'ディナー', style: 'restaurant',
-      time: 80, worldH: 2150, start: { x: 270, y: 2040 },
-      rank: { S: 12500, A: 9400, B: 6400 },
+      time: 60, worldH: 2150, start: { x: 270, y: 2040 },
+      rank: { S: 32000, A: 21000, B: 11500 },
       targets: [
         T('window', 90, 1860), T('window', 90, 1700), T('window', 450, 1780),
         T('tree', 270, 1560),
@@ -201,6 +256,7 @@
         T('heart', 270, 800),
         T('tree', 450, 640),
         T('bigtree', 240, 380),
+        T('reindeer', 270, 1450),
       ],
       obstacles: [
         { x: 175, y: 1900, w: 190, h: 40 }, { x: 175, y: 1620, w: 190, h: 40 },
@@ -213,7 +269,7 @@
         { x: 60, y: 520, type: 'cam', dir: 0.5, amp: 0.8, spd: 0.8, range: 250, fov: 0.42 },
       ],
       couples: [{ pts: [[368, 1472], [424, 1436]], spd: 14 }, { pts: [[380, 880]], spd: 0 }],
-      crowd: 4,
+      mobs: 5,
       auras: [{ id: 's3_aura', couple: 1, source: 9 }],
       investigate: true,
       events: [{
@@ -223,8 +279,8 @@
     },
     {
       id: 4, name: '海辺のイルミ公園', theme: '告白前', style: 'park',
-      time: 85, worldH: 2300, start: { x: 270, y: 2180 },
-      rank: { S: 14000, A: 10500, B: 7000 },
+      time: 65, worldH: 2300, start: { x: 270, y: 2180 },
+      rank: { S: 37000, A: 24000, B: 13000 },
       targets: [
         T('water', 110, 2020), T('water', 430, 1950),
         T('tunnel', 270, 1780),
@@ -235,6 +291,7 @@
         T('photo', 400, 660),
         T('heart', 140, 560),
         T('bigtree', 270, 330),
+        T('reindeer', 440, 1760), T('reindeer', 440, 870),
       ],
       obstacles: [{ x: 60, y: 1700, w: 60, h: 60 }, { x: 420, y: 1240, w: 60, h: 60 }, { x: 60, y: 760, w: 60, h: 60 }],
       guards: [
@@ -247,7 +304,7 @@
         { pts: [[360, 1322], [190, 1282]], spd: 17 },
         { pts: [[250, 650]], spd: 0 },
       ],
-      crowd: 6,
+      mobs: 7,
       /* 後半は2か所。どちらも迂回でき、電源は輪の外から工作できる */
       auras: [{ id: 's4_aura_a', couple: 0, source: 0 }, { id: 's4_aura_b', couple: 2, source: 10 }],
       investigate: true,
@@ -258,17 +315,18 @@
     },
     {
       id: 5, name: '展望台', theme: 'クライマックス', style: 'tower',
-      time: 80, worldH: 2250, start: { x: 270, y: 2130 },
-      rank: { S: 16000, A: 12000, B: 8000 },
+      time: 60, worldH: 2250, start: { x: 270, y: 2130 },
+      rank: { S: 38000, A: 24500, B: 13500 },
       targets: [
-        T('led', 100, 1980), T('led', 440, 1900),
+        T('gift', 100, 1980), T('snowman', 440, 1900),
         T('heart', 270, 1740),
         T('window', 100, 1580), T('window', 440, 1520),
         T('bigtree', 270, 1330),
-        T('led', 100, 1120), T('led', 440, 1050),
+        T('reindeer', 100, 1120), T('gift', 440, 1050),
         T('photo', 270, 890),
         T('heart', 120, 700), T('window', 440, 660),
         T('bigtree', 270, 400),
+        T('reindeer', 270, 1560),
       ],
       obstacles: [
         { x: 190, y: 1860, w: 160, h: 44 }, { x: 190, y: 1180, w: 160, h: 44 }, { x: 190, y: 600, w: 160, h: 44 },
@@ -280,7 +338,7 @@
         { x: 60, y: 300, type: 'cam', dir: 0.6, amp: 0.9, spd: 0.9, range: 260, fov: 0.44 },
       ],
       couples: [{ pts: [[168, 1402], [372, 1358]], spd: 16 }, { pts: [[340, 540]], spd: 0 }],
-      crowd: 6,
+      mobs: 7,
       auras: [{ id: 's5_aura', couple: 1, source: 10 }],
       investigate: true,
       events: [{
@@ -288,7 +346,10 @@
         cues: ['星、見て', '3', '2', '1'], payoff: '主役だけ帰った？',
       }],
     },
+    SPECIAL_STAGE,
   ];
+  /* 通常ステージ（全制覇の判定に使う）と、全制覇後に出る特別ステージを分ける */
+  const NORMAL = STAGES.filter((st) => !st.special);
 
   /* 無線（本部⇔工作員）。長い会話にはしない */
   const RADIO = {
@@ -354,6 +415,19 @@
     fx_love_aura_ring:      'assets/v3/fx_love_aura_ring.png',
     fx_love_heart:          'assets/v3/fx_love_heart.png',
     fx_love_aura_break:     'assets/v3/fx_love_aura_break.png',
+    /* v4（ChatGPTへ発注中）。置けば自動で使い、無い間は図形描画・既存の絵で代用する */
+    prop_reindeer:          'assets/v4/prop_reindeer.png',
+    prop_gift:              'assets/v4/prop_gift.png',
+    prop_snowman:           'assets/v4/prop_snowman.png',
+    prop_bluetree:          'assets/v4/prop_bluetree.png',
+    npc_guard_walk_side:    'assets/v4/npc_guard_walk_side.png',
+    npc_guard_walk_front:   'assets/v4/npc_guard_walk_front.png',
+    npc_guard_walk_back:    'assets/v4/npc_guard_walk_back.png',
+    npc_couple_walk_side:   'assets/v4/npc_couple_walk_side.png',
+    npc_couple_walk_front:  'assets/v4/npc_couple_walk_front.png',
+    npc_couple_walk_back:   'assets/v4/npc_couple_walk_back.png',
+    player_agent_back:      'assets/v4/player_agent_back.png',
+    bg6: 'assets/v4/bg_stage6.jpg',
     bg1: 'assets/bg_stage1.jpg', bg2: 'assets/bg_stage2.jpg', bg3: 'assets/bg_stage3.jpg',
     bg4: 'assets/bg_stage4.jpg', bg5: 'assets/bg_stage5.jpg',
   };
@@ -389,6 +463,8 @@
     success: 'assets/v3/result_mission_success.jpg',
     failure: 'assets/v3/result_mission_failure.jpg',
     ending:  'assets/v3/ending_all_clear_breakup.jpg',
+    revival: 'assets/v4/story_revival.jpg',          // 発注中。無い間はカップルの立ち絵と青い背景で見せる
+    special: 'assets/v4/result_special_clear.jpg',   // 発注中。無い間は通常の成功絵
   };
 
   /* 工作対象の種類 → 素材キー / 表示高さ(px) */
@@ -396,10 +472,12 @@
     tree: 'prop_tree', bigtree: 'prop_bigtree', heart: 'prop_heart', tunnel: 'prop_tunnel',
     photo: 'prop_photospot', booth: 'prop_booth', wreath: 'prop_wreath', window: 'prop_window',
     water: 'prop_water', led: 'prop_led',
+    reindeer: 'prop_reindeer', gift: 'prop_gift', snowman: 'prop_snowman', bluetree: 'prop_bluetree',
   };
   const PROP_H = {
     tree: 104, bigtree: 186, heart: 98, tunnel: 208, photo: 96,
     booth: 84, wreath: 92, window: 88, water: 46, led: 96,
+    reindeer: 118, gift: 72, snowman: 86, bluetree: 112,
   };
   const CHAR_H = {
     player_agent: 64, npc_guard: 62, npc_couple: 66, npc_crowd: 54,
@@ -408,6 +486,14 @@
     npc_guard_check: 62, player_agent_work: 54,
     npc_couple_dejected: 66, npc_couple_heartbroken: 66, npc_couple_lovey: 66, npc_couple_breakup: 66,
     player_agent_success: 64, player_agent_failure: 64,
+    npc_guard_walk_side: 62, npc_guard_walk_front: 62, npc_guard_walk_back: 62,
+    npc_couple_walk_side: 66, npc_couple_walk_front: 66, npc_couple_walk_back: 66, player_agent_back: 64,
+  };
+  /* 歩く向きごとの絵。[素材キー, 絵が向いている左右（1=右, -1=左）]。fb = 向きの絵が無いときの代用 */
+  const WALK = {
+    guard:  { side: ['npc_guard_walk_side', 1], front: ['npc_guard_walk_front', 1], back: ['npc_guard_walk_back', 1], fb: ['npc_guard_check', -1] },
+    couple: { side: ['npc_couple_walk_side', 1], front: ['npc_couple_walk_front', 1], back: ['npc_couple_walk_back', 1], fb: ['npc_couple_tunnel', -1] },
+    player: { side: ['player_agent', 1], front: ['player_agent', 1], back: ['player_agent_back', 1], fb: ['player_agent', 1] },
   };
   /* カップルの結末 → 差分素材 */
   const MOOD_KEY = {
@@ -441,7 +527,7 @@
       const im = new Image();
       im.onload = () => {
         IMG[k] = im;
-        if (TRIM[k] && k.indexOf('prop_') === 0) {
+        if (k.indexOf('prop_') === 0) {
           VAR.cold[k] = makeVariant(im, 'cold');
           VAR.dark[k] = makeVariant(im, 'dark');
         }
@@ -477,10 +563,13 @@
     unlocked: 1,
     best: {},        // ルール版1の記録。読み取り専用で保持する
     best2: {},       // ルール版2の記録。読み取り専用で保持する
-    best3: {},       // ルール版3（今回）の記録
+    best3: {},       // ルール版3の記録。読み取り専用で保持する
+    best4: {},       // ルール版4（今回）の記録
     allClear2: false,                 // v2の旧フラグ（読み取りのみ）
     allClearEndingUnlocked: false,    // 全ステージ制覇の破局エンディング
     allClearEndingSeen: false,
+    specialUnlocked: false,           // 全制覇後の特別ステージ「青の回廊」
+    specialSeen: false,
     bgm: true, se: true, hap: true,
     lefty: false,    // v2までの左右交換。v3では controls へ移行済み（値は残す）
     lite: false, awards: {},
@@ -492,10 +581,10 @@
   const PRESETS = ['br', 'bc', 'bl', 'custom'];
 
   /* 記録はルール版ごとに分ける。旧版の点数と新版の点数は混ぜない */
-  function bests() { return save.best3; }
+  function bests() { return save.best4; }
   /* クリアの証跡。旧版の記録も「そのステージをクリアした」ことの証拠として使う */
-  function cleared(id) { return !!(save.best[id] || save.best2[id] || save.best3[id]); }
-  function allCleared() { return STAGES.every((st) => cleared(st.id)); }
+  function cleared(id) { return !!(save.best[id] || save.best2[id] || save.best3[id] || save.best4[id]); }
+  function allCleared() { return NORMAL.every((st) => cleared(st.id)); }
 
   function loadSave() {
     let had = false;
@@ -507,16 +596,20 @@
       }
     } catch (e) { /* プライベートモード・JSON破損：既定値のまま続行 */ }
     /* 壊れている項目だけを既定値へ戻す（進行や記録を巻き込まない） */
-    ['best', 'best2', 'best3', 'awards', 'tips', 'proto'].forEach((k) => {
+    ['best', 'best2', 'best3', 'best4', 'awards', 'tips', 'proto'].forEach((k) => {
       if (!save[k] || typeof save[k] !== 'object' || Array.isArray(save[k])) save[k] = {};
     });
     ['bgm', 'se', 'hap', 'lite'].forEach((k) => { if (typeof save[k] !== 'boolean') save[k] = k !== 'lite'; });
-    save.unlocked = Math.max(1, Math.min(STAGES.length, save.unlocked | 0));
+    save.unlocked = Math.max(1, Math.min(NORMAL.length, save.unlocked | 0));
     save.controls = migrateControls(save.controls, had, save.lefty);
     /* 全制覇の解放は、5ステージすべてのクリア証跡がある場合だけ。起動時に強制再生はしない */
     if (!save.allClearEndingUnlocked && allCleared()) save.allClearEndingUnlocked = true;
     save.allClearEndingUnlocked = !!save.allClearEndingUnlocked;
     save.allClearEndingSeen = !!save.allClearEndingSeen;
+    /* 特別ステージは全制覇と同時に出現する（既に全制覇済みのセーブにも出す） */
+    if (save.allClearEndingUnlocked) save.specialUnlocked = true;
+    save.specialUnlocked = !!save.specialUnlocked;
+    save.specialSeen = !!save.specialSeen;
   }
 
   /* 旧「左利き」の移行。名前ではなく、旧コードが実際に移動へ割り当てていた側を引き継ぐ：
@@ -615,6 +708,10 @@
       shutter() { noise(0.05, 0.3, 3000); tone(2100, 0.05, 'square', 0.1); },
       notice() { tone(520, 0.1, 'triangle', 0.12); tone(700, 0.12, 'triangle', 0.1, (ac ? ac.currentTime : 0) + 0.1); },
       /* v3：落胆（下がる2音）／親密化（甘い和音）／オーラ消滅／破局 */
+      timeUp() {
+        const c = ctx(); if (!c) return;
+        [880, 1175, 1568].forEach((f, i) => tone(f, 0.18, 'square', 0.08, c.currentTime + 0.05 + i * 0.06));
+      },
       deflate() {
         const c = ctx(); if (!c) return;
         tone(620, 0.22, 'triangle', 0.12, c.currentTime + 0.12, 300);
@@ -739,6 +836,7 @@
     glowSprites.cold = makeGlow('rgba(220,238,255,1)');
     glowSprites.red  = makeGlow('rgba(255,74,92,1)');
     glowSprites.green = makeGlow('rgba(120,255,170,1)');
+    glowSprites.blue = makeGlow('rgba(80,140,255,1)');
   }
   function glow(kind, x, y, r, a) {
     if (save.lite && r < 40) return;
@@ -790,6 +888,8 @@
     metrics: null,     // 操作比較メモ
     tip: '', tipT: 0,  // 1回だけの短い説明
     cardT: 0,
+    totalW: 1, remainW: 1, bonusCount: 0,
+    mobs: [],          // 通行カップル
   };
 
   const input = { mx: 0, my: 0, active: false, sabQueued: false, keys: {} };
@@ -806,7 +906,7 @@
 
     G.pendingWin = false; G.finishT = 0; G.result = null; G.radio = ''; G.radioT = 0; G.graceOn = false;
     G.lines = []; G.failT = 0; G.failInfo = null; G.ending = null; G.blocked = null; G.cards = {};
-    G.tip = ''; G.tipT = 0; G.cardT = 0;
+    G.tip = ''; G.tipT = 0; G.cardT = 0; G.bonusCount = 0;
     if (ui.reactCard) ui.reactCard.classList.remove('on');
     G.metrics = {
       mode: save.controls.mode, firstMove: null, firstWork: null,
@@ -815,13 +915,17 @@
 
     G.targets = st.targets.map((t, i) => ({
       i: i, type: t.type, x: t.x, y: t.y, def: SAB[t.type], done: false, glowPhase: Math.random() * 6.28, t: 0,
-      mood: Math.round(SAB[t.type].mood * (st.moodMul || 1)),  // ステージ倍率はムードだけに効かせる
+      w: SAB[t.type].mood,  // 重み。聖夜ムード = 残っているイルミの重みの割合
+      mood: 0,              // 下で割合（%）に直す
       justGiven: false,   // 同じ対象からジャストを二重取得させない
       graceUsed: 0,       // コンボ待機猶予の使用量（1プレイ1対象あたり）
       evt: null,          // 紐付いたイベント
       aura: null,         // このライトが電源になっているオーラ
       effOff: false,      // オーラ電源は種別の見た目に関わらず「消灯」で表す
     }));
+    G.totalW = G.targets.reduce((a, t) => a + t.w, 0);
+    G.remainW = G.totalW;
+    G.targets.forEach((t) => { t.mood = 100 * t.w / G.totalW; });
     G.obstacles = (st.obstacles || []).map((o) => ({ x: o.x, y: o.y, w: o.w, h: o.h }));
     G.guards = (st.guards || []).map((g, i) => ({
       i: i,
@@ -875,14 +979,7 @@
       cp.aura = a; src.aura = a; src.effOff = true;
       G.auras.push(a);
     });
-    const rnd = mulberry(st.id * 9973);
-    G.crowd = [];
-    for (let i = 0; i < (st.crowd || 0); i++) {
-      G.crowd.push({
-        x: 70 + rnd() * 400, y: 260 + rnd() * (st.worldH - 420),
-        a: rnd() * 6.28, spd: 8 + rnd() * 10, t: rnd() * 4,
-      });
-    }
+    G.mobs = buildMobs(st);
     G.player.x = st.start.x; G.player.y = st.start.y; G.player.vx = G.player.vy = 0; G.player.face = -Math.PI / 2;
     G.cam.y = clamp(G.player.y - H * 0.58, 0, st.worldH - H); G.cam.shake = 0; G.cam.zoom = 1;
 
@@ -892,8 +989,50 @@
 
     Audio2.setIntensity(1);
     hint('');   // 前のステージのチュートリアル表示を持ち越さない
-    ui.stageName.textContent = 'STAGE ' + st.id + '　' + st.name;
+    ui.stageName.textContent = (st.special ? 'SPECIAL' : 'STAGE ' + st.id) + '　' + st.name;
     updateMoodUI(); updateTimeUI();
+  }
+
+  /* 通行カップルを置く。対象・オーラ・カップル・什器・開始地点と重ならない場所だけに（決定的な乱数で毎回同じ配置） */
+  function buildMobs(st) {
+    const rnd = mulberry(st.id * 7919 + 11);
+    const out = [];
+    for (let tries = 0; out.length < (st.mobs || 0) && tries < 800; tries++) {
+      const x = 70 + rnd() * 400, y = 240 + rnd() * (st.worldH - 480);
+      const walker = rnd() < 0.5;
+      const span = walker ? 80 + rnd() * 70 : 0;
+      const x0 = clamp(x - span / 2, 60, W - 60), x1 = clamp(x + span / 2, 60, W - 60);
+      const idle = rnd() < 0.5 ? 'npc_couple' : 'npc_couple_lovey';
+      const dir = rnd() < 0.5 ? -1 : 1, spd = 16 + rnd() * 8, wait = rnd() * 2, step = rnd() * 6;
+      if (!mobSpotOk(x0, x1, y, st, out)) continue;
+      out.push({ x: (x0 + x1) / 2, y: y, x0: x0, x1: x1, dir: dir, spd: walker ? spd : 0, wait: wait,
+                 idleKey: idle, mood: null, step: step, vx: 0, sighT: 0 });
+    }
+    return out;
+  }
+  function mobSpotOk(x0, x1, y, st, list) {
+    const segD = (px, py) => Math.hypot(px < x0 ? x0 - px : px > x1 ? px - x1 : 0, py - y);
+    if (segD(st.start.x, st.start.y) < 170) return false;
+    for (let i = 0; i < G.targets.length; i++) if (segD(G.targets[i].x, G.targets[i].y) < 70) return false;
+    for (let i = 0; i < G.auras.length; i++) if (segD(G.auras[i].x, G.auras[i].y) < G.auras[i].r + 44) return false;
+    for (let i = 0; i < G.couples.length; i++) if (segD(G.couples[i].x, G.couples[i].y) < 80) return false;
+    for (let i = 0; i < G.obstacles.length; i++) {
+      const o = G.obstacles[i];
+      if (y > o.y - 40 && y < o.y + o.h + 30 && x1 > o.x - 30 && x0 < o.x + o.w + 30) return false;
+    }
+    for (let i = 0; i < list.length; i++) {
+      const m = list[i];
+      if (Math.abs(m.y - y) < 70 && x1 > m.x0 - 60 && x0 < m.x1 + 60) return false;
+    }
+    return true;
+  }
+  /* 近くのイルミが消えると、通行カップルもその場で冷める */
+  function mobsReact(t) {
+    for (let i = 0; i < G.mobs.length; i++) {
+      const m = G.mobs[i];
+      if (m.mood || Math.hypot(m.x - t.x, m.y - t.y) > CFG.mobReactR) continue;
+      m.mood = 'dejected'; m.vx = 0; m.sighT = 1.6;
+    }
   }
 
   /* ---------- 視線・遮蔽 ---------- */
@@ -919,7 +1058,7 @@
   }
   function blocked(ax, ay, bx, by) {
     for (let i = 0; i < G.obstacles.length; i++) if (segRect(ax, ay, bx, by, G.obstacles[i])) return true;
-    for (let i = 0; i < G.crowd.length; i++) if (segCircle(ax, ay, bx, by, G.crowd[i].x, G.crowd[i].y, 15)) return true;
+    for (let i = 0; i < G.mobs.length; i++) if (segCircle(ax, ay, bx, by, G.mobs[i].x, G.mobs[i].y - 20, 18)) return true;
     return false;
   }
 
@@ -958,6 +1097,7 @@
     let seen = false;
     for (let i = 0; i < G.guards.length; i++) {
       const g = G.guards[i];
+      const gx0 = g.x, gy0 = g.y;
       if (g.bubbleT > 0) g.bubbleT -= dt;
       if (g.invCool > 0) g.invCool -= dt;
       if (g.type === 'cam' || g.mode === 'sweep') {
@@ -973,6 +1113,8 @@
         g.dir = Math.atan2(b[1] - a[1], b[0] - a[0]);
         if (k >= 1) { g.leg = (g.leg + 1) % g.pts.length; g.legT = 0; }
       }
+      /* 実際に動いた向きと速さ（絵の向き・歩幅に使う） */
+      if (dt > 0) { g.vx = (g.x - gx0) / dt; g.vy = (g.y - gy0) / dt; g.step = (g.step || 0) + Math.hypot(g.x - gx0, g.y - gy0) * 0.09; }
       const d = Math.hypot(p.x - g.x, p.y - g.y);
       let hit = false;
       if (d < g.range) {
@@ -1023,12 +1165,14 @@
     /* --- カップルNPC --- */
     for (let i = 0; i < G.couples.length; i++) {
       const c = G.couples[i];
+      const cx0 = c.x, cy0 = c.y;
       if (!c.fixed) {
         c.t += dt * c.spd / 100 * c.dirSign;
         if (c.t > 1) { c.t = 1; c.dirSign = -1; } else if (c.t < 0) { c.t = 0; c.dirSign = 1; }
         c.x = lerp(c.pts[0][0], c.pts[1][0], c.t);
         c.y = lerp(c.pts[0][1], c.pts[1][1], c.t);
       }
+      if (dt > 0) { c.vx = (c.x - cx0) / dt; c.vy = (c.y - cy0) / dt; if (c.vx || c.vy) c.step = (c.step || 0) + dt * 8; }
       /* 旧ハート判定はイベント未割当のカップルにだけ残す（ジャスト判定を一本化するため） */
       if (!c.evt) {
         c.next -= dt;
@@ -1038,13 +1182,16 @@
       c.pose = c.evt && (c.evt.phase === 'windup' || c.evt.phase === 'beat')
         ? Math.min(1, c.pose + dt * 4) : Math.max(0, c.pose - dt * 4);
     }
-    /* --- 雑踏NPC --- */
-    for (let i = 0; i < G.crowd.length; i++) {
-      const n = G.crowd[i];
-      n.t -= dt;
-      if (n.t <= 0) { n.t = 1.5 + Math.random() * 3; n.a = Math.random() * 6.28; }
-      n.x = clamp(n.x + Math.cos(n.a) * n.spd * dt, 50, W - 50);
-      n.y = clamp(n.y + Math.sin(n.a) * n.spd * dt, 200, st.worldH - 200);
+    /* --- 通行カップル：端まで歩いたら少し立ち止まり、向きを変える --- */
+    for (let i = 0; i < G.mobs.length; i++) {
+      const m = G.mobs[i];
+      if (m.sighT > 0) m.sighT -= dt;
+      if (m.spd <= 0 || m.mood) { m.vx = 0; continue; }
+      if (m.wait > 0) { m.wait -= dt; m.vx = 0; continue; }
+      const nx = m.x + m.dir * m.spd * dt;
+      if (nx <= m.x0 || nx >= m.x1) {
+        m.x = clamp(nx, m.x0, m.x1); m.dir = -m.dir; m.vx = 0; m.wait = 1.2 + Math.random() * 2.2;
+      } else { m.x = nx; m.vx = m.dir * m.spd; m.step += dt * 8; }
     }
 
     /* --- コンボ（狙って待てるよう、条件を満たす間だけコンボ時計を止める。デート期限は延ばさない） --- */
@@ -1220,7 +1367,7 @@
 
   /* 今その対象へ工作を始めたら、何秒後に完了するか（吸着＋工作時間＋コンボ短縮） */
   function completeDelay(t) {
-    return SNAP_TIME + t.def.dur * (G.combo >= 3 ? 0.84 : 1);
+    return SNAP_TIME + t.def.dur * workMul();
   }
 
   function updateEvents(dt) {
@@ -1265,6 +1412,7 @@
   function settleDate(e, outcome) {
     e.phase = 'resolved'; e.outcome = outcome; e.cue = '';
     e.couple.mood = outcome === 'just' ? 'heartbroken' : outcome === 'missed' ? 'lovey' : 'dejected';
+    e.couple.fixed = true; e.couple.vx = e.couple.vy = 0;   // 結末のポーズで立ち止まる
   }
   function resolveMissed(e, quiet) {
     settleDate(e, 'missed');
@@ -1461,13 +1609,13 @@
   function startAction() {
     if (G.state !== 'playing' || G.action) return;
     const t = G.candidate;
-    if (!t) return;
+    if (!t || t.done) return;            // 完了直後の1フレームに残ったロックでは始めない
     const p = G.player;
     const an = anchorOf(t, p.x, p.y);
     G.action = {
       target: t, phase: 'snap', t: 0, started: false,
       fx: p.x, fy: p.y, ax: an.x, ay: an.y,
-      dur: t.def.dur * (G.combo >= 3 ? 0.84 : 1),
+      dur: t.def.dur * workMul(),
       /* 工作開始時に置かれていた入力。これ自体ではキャンセルしない */
       keys: { l: input.keys.l, r: input.keys.r, u: input.keys.u, d: input.keys.d },
       stick: ctl.stick.id !== null ? { x: ctl.stick.ox, y: ctl.stick.oy } : null,
@@ -1502,11 +1650,12 @@
           → 反応 → 勝利の保留（確定は update 末尾）／勝っていなければ警備員へ通知
      over：作業が完了してからフレーム末までの超過時間。完了の正確な時刻 = G.time - over */
   function doSabotage(t, over) {
-    if (t.done) return;
+    if (t.done) { if (G.action && G.action.target === t) cancelAction(); return; }
     const at = G.time - (over || 0);
     t.done = true; t.t = 0;
     G.doneCount++;
     cancelAction();
+    if (G.candidate === t) G.candidate = null;
     if (G.metrics && G.metrics.firstWork === null) G.metrics.firstWork = at;
 
     /* 電源ライトならオーラの衝突をこの更新で解除（次の移動からすぐ通れる） */
@@ -1526,19 +1675,25 @@
     if (just && t.justGiven) just = false;
     if (just) t.justGiven = true;
 
-    /* スコア・ムード（ムード減少はステージ倍率込みの実数値。期限切れでもムードは回復させない） */
-    const dmg = t.mood;
+    /* スコア・ムード（ムード＝残っているイルミの割合。期限切れでもムードは回復させない） */
+    const dmg = fmtPct(t.mood);
     const gain = Math.round(t.def.score * G.combo) + (just ? JUST_BONUS : 0);
     G.score += gain;
-    G.mood = Math.max(0, G.mood - dmg);
+    G.remainW = Math.max(0, G.remainW - t.w);
+    G.mood = G.remainW <= 1e-9 ? 0 : 100 * G.remainW / G.totalW;
+    /* 特別なイルミ：制限時間が延びる */
+    if (t.def.bonus) { G.left += CFG.bonusSec; G.bonusCount = (G.bonusCount || 0) + 1; }
 
     /* 演出 */
     G.cam.zoom = 1.06; G.flash = 1;
     Audio2.se.success(G.combo);
     haptic(just ? [18, 30, 24] : 16);
+    if (t.def.bonus) Audio2.se.timeUp();
     if (just) {
       G.just++; G.slowmo = 0.16; Audio2.se.just();
       centerMsg('JUST SABOTAGE', '+' + JUST_BONUS);
+    } else if (t.def.bonus) {
+      centerMsg('TIME +' + CFG.bonusSec + '秒', t.def.name + (G.combo >= 2 ? '　COMBO x' + G.combo : ''));
     } else if (G.combo >= 2) {
       Audio2.se.combo(G.combo);
       centerMsg('MOOD −' + dmg + '%', 'COMBO x' + G.combo);
@@ -1565,7 +1720,7 @@
     } else if (t.aura && !t.aura.couple.evt) {
       /* 電源を落とされたカップル（デートに紐付いていない組）は、その場で冷める */
       const c = t.aura.couple;
-      c.mood = 'dejected';
+      c.mood = 'dejected'; c.fixed = true; c.vx = c.vy = 0;
       say(c, pickLine(t), EVCFG.reaction);
     } else if (!ev) {
       let near = null, nd = 1e9;
@@ -1580,9 +1735,15 @@
     if (G.stage.tutorial && G.tutorialStep < 4) G.tutorialStep = 4;
     /* 勝利は update の末尾で確定する（同一フレームの失敗を優先するため）。
        クリアが決まった工作では新しい調査を始めない */
-    if (G.mood <= 0) G.pendingWin = true;
+    if (G.targets.every((x) => x.done)) G.pendingWin = true;    // フィールドのイルミをすべて工作したらクリア
     else notifyGuards(t);
+    mobsReact(t);
   }
+
+  /* 割合の表示：小さい装飾は小数1桁まで */
+  function fmtPct(v) { return v < 9.95 ? (Math.round(v * 10) / 10).toFixed(1) : String(Math.round(v)); }
+  /* 工作時間の倍率：3連鎖以上 ×0.84、10連鎖以上（フィーバー）×0.7 */
+  function workMul() { return G.combo >= CFG.fever.combo ? CFG.fever.mul : G.combo >= 3 ? 0.84 : 1; }
 
   function pickLine(t) {
     const lines = REACT[t.def.effect] || REACT.off;
@@ -1629,10 +1790,10 @@
       v: RULES_VERSION,
     };
     save.awards[award.id] = true;
-    if (G.stageIdx + 1 < STAGES.length) save.unlocked = Math.max(save.unlocked, G.stageIdx + 2);
-    /* 5ステージすべてのクリア証跡がそろった最初の1回だけ、破局エンディングへ */
-    const firstAll = !save.allClearEndingUnlocked && allCleared();
-    if (firstAll) save.allClearEndingUnlocked = true;
+    if (!st.special && G.stageIdx + 1 < NORMAL.length) save.unlocked = Math.max(save.unlocked, G.stageIdx + 2);
+    /* 5ステージすべてのクリア証跡がそろった最初の1回だけ、破局エンディング → 復縁 → 特別ステージ出現 */
+    const firstAll = !st.special && !save.allClearEndingUnlocked && allCleared();
+    if (firstAll) { save.allClearEndingUnlocked = true; save.specialUnlocked = true; }
     recordMetrics('clear');
     putSave();   // 演出を待たずに保存する。途中で閉じても解放は失われない
 
@@ -1673,10 +1834,14 @@
     return false;
   }
 
-  function setPanel(id, kind) {
+  /* fallback：その絵がまだ無いときに使う絵（無ければ文字だけで成立させる） */
+  function setPanel(id, kind, fallback) {
     const img = $(id);
     img.parentNode.classList.remove('none');
-    img.onerror = () => img.parentNode.classList.add('none');   // 読めなければ文字だけで成立させる
+    img.onerror = () => {
+      if (fallback && img.getAttribute('src') !== PANEL_SRC[fallback]) img.src = PANEL_SRC[fallback];
+      else img.parentNode.classList.add('none');
+    };
     if (img.getAttribute('src') !== PANEL_SRC[kind]) img.src = PANEL_SRC[kind];
     img.parentNode.dataset.kind = kind;
   }
@@ -1685,11 +1850,12 @@
     if (G.state === 'result' || !G.result) return;
     G.state = 'result';
     const r = G.result;
-    const all = r.firstAll;
+    const all = r.firstAll, sp = !!G.stage.special;
     setPanel('resultArt', all ? 'ending' : 'success');
-    $('resultEyebrow').textContent = (all ? 'ALL MISSIONS COMPLETE' : 'MISSION CLEAR') + ' / STAGE ' + G.stage.id;
-    $('resultHead').textContent = all ? '全任務達成' : '任務達成';
-    $('resultSub').textContent = all ? '聖夜、完全終了。' : '聖夜の平日化に成功';
+    if (sp) setPanel('resultArt', 'special', 'success');
+    $('resultEyebrow').textContent = sp ? 'SPECIAL STAGE CLEAR' : (all ? 'ALL MISSIONS COMPLETE' : 'MISSION CLEAR') + ' / STAGE ' + G.stage.id;
+    $('resultHead').textContent = sp ? '延長戦、終了' : all ? '全任務達成' : '任務達成';
+    $('resultSub').textContent = sp ? '青の回廊も、ただの平日になった' : all ? '聖夜、完全終了。' : '聖夜の平日化に成功';
     const badge = $('rankBadge');
     badge.textContent = r.rank; badge.className = r.rank;
     $('titleAward').textContent = r.award.name;
@@ -1710,13 +1876,12 @@
     hl.classList.toggle('on', !!text);
 
     const fin = $('finale');
-    fin.textContent = all ? RADIO.allClear : '';
+    fin.textContent = all ? RADIO.allClear + '　／　特別ステージ「青の回廊」が出現した' : '';
     fin.classList.toggle('on', !!all);
 
-    $('btnNext').style.display = G.stageIdx + 1 < STAGES.length ? '' : 'none';
+    $('btnNext').style.display = !G.stage.special && G.stageIdx + 1 < NORMAL.length ? '' : 'none';
     /* 初回以後は通常の結果からもエンディングを再生できる */
     $('btnEnding').style.display = save.allClearEndingUnlocked && !all ? '' : 'none';
-    $('protoNote').textContent = protoLine();
     showOv('ovResult');
     Audio2.stopBgm();
   }
@@ -1763,7 +1928,6 @@
     setPanel('failArt', 'failure');
     $('failReason').textContent = f.reason;
     $('failSub').textContent = f.sub;
-    $('protoNoteF').textContent = protoLine();
     showOv('ovFail');
   }
 
@@ -1782,9 +1946,15 @@
     Audio2.stopBgm();
     Audio2.se.ending();
     save.allClearEndingSeen = true;
+    save.specialUnlocked = true;
     putSave();
     buildStageList();
     updateTitleBadge();
+    /* 復縁の絵が届いていれば、それを主役にする */
+    const ra = $('revArt');
+    ra.onerror = () => ra.parentNode.classList.add('none');
+    ra.onload = () => { ra.parentNode.classList.remove('none'); $('ovEnding').classList.add('hasRevArt'); };
+    if (!ra.getAttribute('src')) ra.src = PANEL_SRC.revival;
   }
   function updateEnding(dt) {
     const e = G.ending;
@@ -1805,17 +1975,34 @@
     /* 1.8〜3.0 台詞を順に */
     E.lineA.style.opacity = (k(C.lineA, 0.25) * cOut).toFixed(3);
     E.lineB.style.opacity = (k(C.lineB, 0.25) * cOut).toFixed(3);
-    /* 3.0〜4.5 最終絵 */
-    E.art.style.opacity = k(C.art, 0.5).toFixed(3);
-    /* 4.5〜5.5 主人公の満足げな顔 */
+    /* 3.0〜4.5 最終絵、4.5〜 主人公の満足げな顔。復縁が始まると消える */
+    const rOut = 1 - k(C.revival, 0.4);
+    E.art.style.opacity = (k(C.art, 0.5) * rOut).toFixed(3);
     const h = k(C.hero, 0.4);
-    E.hero.style.opacity = h.toFixed(3);
+    E.hero.style.opacity = (h * rOut).toFixed(3);
     E.hero.style.transform = 'translateY(' + ((1 - h) * 12).toFixed(1) + 'px)';
+    /* 6.2〜 復縁：青い街の光の中に、ふたりが戻ってくる */
+    const rIn = k(C.revival, 0.5);
+    E.revBg.style.opacity = rIn.toFixed(3);
+    const cp = k(C.revival + 0.35, 0.35);
+    E.revCouple.style.opacity = cp.toFixed(3);
+    E.revCouple.style.transform = 'translateX(-50%) scale(' + (0.9 + 0.1 * cp + (cp >= 1 ? Math.sin((t - C.revival - 0.7) * 9) * 0.015 : 0)).toFixed(3) + ')';
+    E.revLineA.style.opacity = k(C.revLineA, 0.25).toFixed(3);
+    E.revLineB.style.opacity = k(C.revLineB, 0.2).toFixed(3);
+    E.revLineB.style.transform = 'scale(' + (1 + 0.12 * (1 - k(C.revLineB, 0.25))).toFixed(3) + ')';
+    const bn = k(C.revBanner, 0.4);
+    E.revBanner.style.opacity = bn.toFixed(3);
+    E.revBanner.style.transform = 'translateY(' + ((1 - bn) * 14).toFixed(1) + 'px)';
     E.prompt.style.opacity = t >= C.end ? '1' : '0';
   }
+  /* スキップ：破局の途中なら復縁の場面へ、復縁の途中以降なら結果へ（どちらも0.25秒以降の新しい入力だけ） */
   function skipEnding() {
     const e = G.ending;
-    if (!e || e.t < CFG.ending.skipAfter) return false;
+    if (!e) return false;
+    const C = CFG.ending;
+    if (e.t < C.skipAfter) return false;
+    if (e.t < C.revival) { e.t = C.revival; updateEnding(0); return true; }
+    if (e.t < C.revival + C.skipAfter) return false;
     finishEnding();
     return true;
   }
@@ -1865,7 +2052,7 @@
       hint(touchMode ? '「工作」ボタンを押す' : 'スペースキーで工作');
       if (!G.candidate) G.tutorialStep = 2;
     } else if (s === 4) {
-      hint('聖夜ムードを 0% にすれば任務完了');
+      hint('すべてのイルミを工作すれば任務完了');
       if (G.time > 11) G.tutorialStep = 5;
     } else if (s === 5) { hint(''); G.tutorialStep = 6; }
   }
@@ -1890,7 +2077,7 @@
     /* 描画順：y でソート */
     const draws = [];
     for (let i = 0; i < G.targets.length; i++) { const t = G.targets[i]; if (inView(t.y, camY, 220)) draws.push({ y: t.y, k: 't', o: t }); }
-    for (let i = 0; i < G.crowd.length; i++) { const c = G.crowd[i]; if (inView(c.y, camY, 60)) draws.push({ y: c.y, k: 'c', o: c }); }
+    for (let i = 0; i < G.mobs.length; i++) { const m = G.mobs[i]; if (inView(m.y, camY, 90)) draws.push({ y: m.y, k: 'c', o: m }); }
     for (let i = 0; i < G.couples.length; i++) { const c = G.couples[i]; if (inView(c.y, camY, 90)) draws.push({ y: c.y, k: 'p', o: c }); }
     for (let i = 0; i < G.guards.length; i++) { const g = G.guards[i]; if (inView(g.y, camY, 300)) draws.push({ y: g.y, k: 'g', o: g }); }
     draws.push({ y: G.player.y, k: 'me', o: G.player });
@@ -1904,7 +2091,7 @@
     for (let i = 0; i < draws.length; i++) {
       const d = draws[i];
       if (d.k === 't') drawTarget(d.o);
-      else if (d.k === 'c') drawCrowd(d.o);
+      else if (d.k === 'c') drawMob(d.o);
       else if (d.k === 'p') drawCouple(d.o);
       else if (d.k === 'g') drawGuard(d.o);
       else drawPlayer(d.o);
@@ -1912,6 +2099,7 @@
 
     for (let i = 0; i < G.auras.length; i++) if (inView(G.auras[i].y, camY, 160)) drawAuraFx(G.auras[i]);
     drawDragUI();
+    for (let i = 0; i < G.targets.length; i++) if (G.targets[i].def.bonus && inView(G.targets[i].y, camY, 200)) drawBonusBadge(G.targets[i]);
     if (G.blocked && !G.candidate && !G.action && G.state === 'playing') drawBlocked(G.blocked);
 
     /* 工作可能リング */
@@ -1939,8 +2127,8 @@
     const top = camY, bot = camY + H;
     // 地面
     const g = ctx.createLinearGradient(0, top, 0, bot);
-    g.addColorStop(0, style === 'tower' ? '#0C1428' : COL.night);
-    g.addColorStop(1, COL.asphalt);
+    g.addColorStop(0, style === 'tower' ? '#0C1428' : style === 'blue' ? '#050920' : COL.night);
+    g.addColorStop(1, style === 'blue' ? '#0A1338' : COL.asphalt);
     ctx.fillStyle = g; ctx.fillRect(-60, top - 80, W + 120, H + 160);
 
     if (bgImg) {
@@ -1958,7 +2146,10 @@
     const rnd = mulberry(st.id * 1237);
     // 歩道・路面
     ctx.fillStyle = COL.walk;
-    if (style === 'street' || style === 'market') {
+    if (style === 'blue') {
+      ctx.fillStyle = '#0D1646'; ctx.fillRect(40, top, 118, H); ctx.fillRect(W - 158, top, 118, H);
+      ctx.fillStyle = 'rgba(80,140,255,.06)'; ctx.fillRect(158, top, W - 316, H);
+    } else if (style === 'street' || style === 'market') {
       ctx.fillRect(58, top, 46, H); ctx.fillRect(W - 104, top, 46, H);
     } else if (style === 'restaurant') {
       ctx.fillRect(0, top, 74, H); ctx.fillRect(W - 74, top, 74, H);
@@ -1983,7 +2174,7 @@
         if (!save.lite) {
           for (let k = 0; k < 6; k++) {
             const wx = bx + 6 + r2() * (bw - 12), wy = by + 8 + r2() * (bh - 10);
-            ctx.fillStyle = r2() > 0.55 ? 'rgba(255,192,105,.18)' : 'rgba(220,238,255,.10)';
+            ctx.fillStyle = style === 'blue' ? 'rgba(90,150,255,.22)' : r2() > 0.55 ? 'rgba(255,192,105,.18)' : 'rgba(220,238,255,.10)';
             ctx.fillRect(wx, wy, 3, 4);
           }
         }
@@ -2008,7 +2199,7 @@
     for (let i = 0; i < G.targets.length; i++) {
       const t = G.targets[i];
       if (!inView(t.y, camY, 140)) continue;
-      const c = t.done ? 'rgba(220,238,255,.10)' : 'rgba(255,192,105,.14)';
+      const c = t.done ? 'rgba(220,238,255,.10)' : t.type === 'bluetree' ? 'rgba(80,140,255,.2)' : 'rgba(255,192,105,.14)';
       const gr = ctx.createLinearGradient(0, t.y + 20, 0, t.y + 150);
       gr.addColorStop(0, c); gr.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = gr;
@@ -2022,13 +2213,13 @@
     const lit = !t.done;
     t.t += 0.016;
     const key = PROP_KEY[t.type], h = PROP_H[t.type];
-    if (IMG[key] && TRIM[key]) {
+    if (IMG[key]) {
       shadow(t.x, t.y + 4, Math.max(13, h * 0.20));
       /* 工作後は effect に応じて「冷白色化」か「消灯」に差し替える */
       const vari = lit ? null : ((t.effOff || t.def.effect === 'off') ? 'dark' : 'cold');
       drawTrimmed(key, t.x, t.y + 6, h, vari);
       const gy = t.y - h * (t.type === 'water' ? 0.1 : 0.5);
-      if (lit || !t.effOff) glow(lit ? 'warm' : 'cold', t.x, gy, lit ? h * 0.7 : h * 0.44, lit ? 0.48 : 0.26);
+      if (lit || !t.effOff) glow(lit ? (t.type === 'bluetree' ? 'blue' : 'warm') : 'cold', t.x, gy, lit ? h * 0.7 : h * 0.44, lit ? 0.48 : 0.26);
       if (t.type === 'bigtree') {
         const sy = t.y + 6 - h * 0.93;
         if (lit) glow('warm', t.x, sy, 42, 0.8);
@@ -2047,7 +2238,127 @@
       case 'window': drawWindow(t, lit); break;
       case 'water': drawWater(t, lit); break;
       case 'led': drawLed(t, lit); break;
+      case 'reindeer': drawReindeer(t, lit); break;
+      case 'gift': drawGift(t, lit); break;
+      case 'snowman': drawSnowman(t, lit); break;
+      case 'bluetree': drawBlueTree(t, lit); break;
     }
+  }
+
+  /* 金色のトナカイ（時間延長）。素材が届くまでの線画。光る枠のオブジェに見えるよう、胴を薄く塗る */
+  function drawReindeer(t, lit) {
+    const x = t.x, y = t.y;
+    shadow(x, y + 4, 34);
+    const c = lit ? '#FFD27A' : 'rgba(170,190,220,.8)';
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.fillStyle = lit ? 'rgba(255,200,110,.28)' : 'rgba(120,140,180,.18)';
+    ctx.strokeStyle = c; ctx.lineWidth = 3;
+    /* 胴・首・頭 */
+    ctx.beginPath(); ctx.ellipse(x - 4, y - 50, 30, 15, 0, 0, 6.2832); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + 18, y - 58); ctx.lineTo(x + 30, y - 84); ctx.lineTo(x + 40, y - 80); ctx.lineTo(x + 26, y - 50); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(x + 40, y - 88, 11, 7, -0.35, 0, 6.2832); ctx.fill(); ctx.stroke();
+    /* 脚 */
+    ctx.beginPath();
+    [-26, -14, 8, 20].forEach((dx) => { ctx.moveTo(x + dx, y - 40); ctx.lineTo(x + dx + (dx > 0 ? 2 : -2), y - 1); });
+    ctx.stroke();
+    /* 角 */
+    ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.moveTo(x + 34, y - 94); ctx.lineTo(x + 26, y - 116); ctx.moveTo(x + 29, y - 106); ctx.lineTo(x + 17, y - 110);
+    ctx.moveTo(x + 43, y - 95); ctx.lineTo(x + 50, y - 118); ctx.moveTo(x + 47, y - 108); ctx.lineTo(x + 59, y - 112);
+    ctx.stroke();
+    ctx.lineCap = 'butt'; ctx.lineJoin = 'miter';
+    if (lit) {
+      const pts = [];
+      for (let i = 0; i < 16; i++) { const a = i / 16 * 6.2832; pts.push([x - 4 + Math.cos(a) * 30, y - 50 + Math.sin(a) * 15]); }
+      [-26, -14, 8, 20].forEach((dx) => { pts.push([x + dx, y - 26], [x + dx, y - 12]); });
+      pts.push([x + 26, y - 116], [x + 50, y - 118], [x + 30, y - 84], [x + 40, y - 88]);
+      pts.forEach((q) => dot(q[0], q[1], 1.9, '#FFF1C9'));
+      glow('warm', x + 4, y - 56, 88, 0.62);
+    } else glow('cold', x + 4, y - 56, 50, 0.22);
+  }
+  function drawGift(t, lit) {
+    const x = t.x, y = t.y;
+    shadow(x, y + 4, 30);
+    ctx.fillStyle = lit ? '#B8323F' : '#2A3550'; ctx.fillRect(x - 26, y - 44, 52, 44);
+    ctx.fillStyle = lit ? '#D8424F' : '#313D5C'; ctx.fillRect(x - 30, y - 54, 60, 12);
+    ctx.fillStyle = lit ? '#FFC069' : '#46557A';
+    ctx.fillRect(x - 4, y - 54, 8, 54);
+    ctx.beginPath(); ctx.ellipse(x - 10, y - 60, 10, 6, -0.5, 0, 6.2832); ctx.ellipse(x + 10, y - 60, 10, 6, 0.5, 0, 6.2832); ctx.fill();
+    for (let i = 0; i < 8; i++) {
+      const px = x - 26 + i * 7.4;
+      dot(px, y - 1, 2, lit ? WARM : '#28334E'); dot(px, y - 44, 2, lit ? WARM : '#28334E');
+    }
+    if (lit) glow('warm', x, y - 30, 60, 0.45);
+  }
+  function drawSnowman(t, lit) {
+    const x = t.x, y = t.y;
+    shadow(x, y + 4, 26);
+    const body = lit ? '#EEF4FF' : '#5A6A88';
+    dot(x, y - 22, 22, body); dot(x, y - 56, 15, body);
+    ctx.fillStyle = '#1A2338'; ctx.fillRect(x - 13, y - 76, 26, 5); ctx.fillRect(x - 8, y - 92, 16, 17);
+    ctx.fillStyle = lit ? '#D8424F' : '#39445F'; ctx.fillRect(x - 15, y - 44, 30, 6);
+    dot(x - 5, y - 59, 1.8, '#1A2338'); dot(x + 5, y - 59, 1.8, '#1A2338');
+    ctx.fillStyle = lit ? '#FF9A3C' : '#46557A';
+    ctx.beginPath(); ctx.moveTo(x, y - 54); ctx.lineTo(x + 10, y - 52); ctx.lineTo(x, y - 50); ctx.closePath(); ctx.fill();
+    for (let i = 0; i < 10; i++) {
+      const a = i / 10 * 6.2832;
+      dot(x + Math.cos(a) * 24, y - 22 + Math.sin(a) * 24, 1.8, lit ? WARM : '#28334E');
+    }
+    if (lit) glow('warm', x, y - 40, 62, 0.42); else glow('cold', x, y - 40, 40, 0.18);
+  }
+  /* 青いLEDで覆われた並木（特別ステージ） */
+  function drawBlueTree(t, lit) {
+    const x = t.x, y = t.y;
+    shadow(x, y + 4, 22);
+    ctx.strokeStyle = '#2A3150'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - 46);
+    ctx.moveTo(x, y - 30); ctx.lineTo(x - 22, y - 62); ctx.moveTo(x, y - 38); ctx.lineTo(x + 24, y - 70);
+    ctx.moveTo(x, y - 46); ctx.lineTo(x - 6, y - 88); ctx.stroke();
+    const n = 18;
+    for (let i = 0; i < n; i++) {
+      const a = i * 2.39996, r = 8 + (i % 6) * 5.2;
+      const px = x + Math.cos(a) * r, py = y - 62 + Math.sin(a) * r * 0.9;
+      dot(px, py, 2, lit ? '#9CC4FF' : '#1E2742');
+    }
+    if (lit) glow('blue', x, y - 60, 58, 0.62);
+  }
+  /* 時間延長のイルミには「+10秒」の札を出す */
+  function drawBonusBadge(t) {
+    if (t.done || !t.def.bonus) return;
+    const y = t.y - (PROP_H[t.type] || 96) - 20 + Math.sin(G.time * 3) * 2;
+    ctx.font = '700 20px "Chakra Petch", sans-serif';
+    ctx.textAlign = 'center';
+    const text = '+' + CFG.bonusSec + '秒';
+    const w = ctx.measureText(text).width + 30;
+    ctx.fillStyle = 'rgba(10,14,28,.88)'; rr(t.x - w / 2, y - 22, w, 30, 15); ctx.fill();
+    ctx.strokeStyle = '#FFC069'; ctx.lineWidth = 2; ctx.stroke();
+    /* 時計の記号 */
+    ctx.beginPath(); ctx.arc(t.x - w / 2 + 14, y - 7, 7, 0, 6.2832); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(t.x - w / 2 + 14, y - 11); ctx.lineTo(t.x - w / 2 + 14, y - 7); ctx.lineTo(t.x - w / 2 + 17, y - 5); ctx.stroke();
+    ctx.fillStyle = '#FFC069'; ctx.fillText(text, t.x + 7, y);
+  }
+
+  /* 進行方向に合わせて絵を選び、左右を反転し、歩幅に合わせて弾ませる。描けたら true */
+  /* 進行方向 → 使う絵と左右反転。{ key, flip, dir } */
+  function walkPick(kind, vx, vy) {
+    const set = WALK[kind];
+    const dir = Math.abs(vy) > Math.abs(vx) * 1.2 ? (vy < 0 ? 'back' : 'front') : 'side';
+    let pick = set[dir];
+    if (!IMG[pick[0]]) pick = set.fb;
+    return { key: pick[0], flip: Math.abs(vx) > 0.5 && vx * pick[1] < 0, dir: dir };
+  }
+  function drawWalker(kind, x, footY, vx, vy, step, h) {
+    const w = walkPick(kind, vx, vy);
+    const key = w.key;
+    if (!IMG[key]) return false;
+    const flip = w.flip;
+    const bob = Math.abs(Math.sin(step)) * 2.2;
+    const hh = CHAR_H[key] || h;
+    if (flip) { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.translate(-x, 0); }
+    drawTrimmed(key, x, footY - bob, hh);
+    if (flip) ctx.restore();
+    return true;
   }
 
   function shadow(x, y, w) {
@@ -2236,8 +2547,8 @@
     } else if (working && IMG.player_agent_work
         && drawTrimmed('player_agent_work', p.x, p.y + 5, CHAR_H.player_agent_work)) {
       /* 工作ポーズ素材がある場合はそのまま */
-    } else if (drawTrimmed('player_agent', p.x, p.y + 5 + bob, CHAR_H.player_agent)) {
-      dot(p.x + 5, p.y - CHAR_H.player_agent * 0.78 + bob, 1.7, '#FF4A5C');   // イヤホンのLED
+    } else if (drawWalker('player', p.x, p.y + 5, Math.cos(p.face), Math.sin(p.face) * (Math.hypot(p.vx, p.vy) > 5 ? 1 : 0), p.anim, CHAR_H.player_agent)) {
+      /* 左へ向いたら絵を反転する（イヤホンのLEDは描き込みの側に付いてくる） */
     } else {
       // 黒コート・スーツ・イヤホンの工作員
       const y = p.y + bob;
@@ -2271,10 +2582,17 @@
       dot(16, 0, 3.2, hot > 0.2 ? RED : '#8FA0C0');
       ctx.restore();
     } else {
-      const checking = g.inv !== 'patrol';
-      if (checking && IMG.npc_guard_check) {
-        drawTrimmed('npc_guard_check', g.x, g.y + 4, CHAR_H.npc_guard_check);
-      } else if (!drawTrimmed('npc_guard', g.x, g.y + 4, CHAR_H.npc_guard)) {
+      const moving = Math.hypot(g.vx || 0, g.vy || 0) > 4;
+      let drew = false;
+      if (moving) drew = drawWalker('guard', g.x, g.y + 4, g.vx, g.vy, g.step || 0, CHAR_H.npc_guard);
+      else if (g.inv !== 'patrol' && IMG.npc_guard_check) {
+        /* 立ち止まって故障を確かめる：懐中電灯を調査先へ向ける（絵は左向き） */
+        const flip = g.invLook && g.invLook.x > g.x;
+        if (flip) { ctx.save(); ctx.translate(g.x, 0); ctx.scale(-1, 1); ctx.translate(-g.x, 0); }
+        drew = drawTrimmed('npc_guard_check', g.x, g.y + 4, CHAR_H.npc_guard_check);
+        if (flip) ctx.restore();
+      }
+      if (!drew && !drawTrimmed('npc_guard', g.x, g.y + 4, CHAR_H.npc_guard)) {
         ctx.fillStyle = hot > 0.2 ? '#4A2030' : '#1C2740';
         ctx.beginPath(); ctx.moveTo(g.x - 12, g.y); ctx.lineTo(g.x - 9, g.y - 30);
         ctx.lineTo(g.x + 9, g.y - 30); ctx.lineTo(g.x + 12, g.y); ctx.closePath(); ctx.fill();
@@ -2335,6 +2653,8 @@
       drawTrimmed(poseKey, c.x, c.y + 4, h);
     } else if (moodKey && IMG[moodKey]) {
       drawTrimmed(moodKey, c.x, c.y + 4, CHAR_H[moodKey]);
+    } else if (Math.hypot(c.vx || 0, c.vy || 0) > 1 && drawWalker('couple', c.x, c.y + 4, c.vx, c.vy, c.step || 0, h)) {
+      /* 歩いている：進行方向を向く */
     } else {
       /* 専用ポーズ素材が無い場合は、既存の立ち絵を軽く傾けて「構えた」ことを示す */
       const lean = c.pose * 0.12;
@@ -2489,9 +2809,16 @@
     ctx.lineTo(x + 6, y - 24); ctx.lineTo(x + 8, y); ctx.closePath(); ctx.fill();
     ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(x, y - 30, 6, 0, 6.2832); ctx.fill();
   }
-  function drawCrowd(n) {
-    shadow(n.x, n.y + 3, 10);
-    if (!drawTrimmed('npc_crowd', n.x, n.y + 3, CHAR_H.npc_crowd)) person(n.x, n.y, '#2A3550', '#D9C3A6');
+  /* 通行カップル：立ち止まって眺める組と、左右に散歩する組。近くの消灯で冷める */
+  function drawMob(m) {
+    shadow(m.x, m.y + 4, 18);
+    const h = CHAR_H.npc_couple;
+    let drew = false;
+    if (m.mood === 'dejected') drew = drawTrimmed('npc_couple_dejected', m.x, m.y + 4, CHAR_H.npc_couple_dejected);
+    else if (Math.abs(m.vx) > 1) drew = drawWalker('couple', m.x, m.y + 4, m.vx, 0, m.step, h);
+    else drew = drawTrimmed(m.idleKey, m.x, m.y + 4, CHAR_H[m.idleKey] || h) || drawTrimmed('npc_couple', m.x, m.y + 4, h);
+    if (!drew) { person(m.x - 9, m.y, '#5E4A6E', '#F0D6BE'); person(m.x + 9, m.y, '#7A3A46', '#F6E0CC'); }
+    if (m.sighT > 0) sighIcon(m.x, m.y - h - 12);
   }
   /* 幅360px相当の画面でも14CSSpx以上になるよう、論理21pxで描く。最大2行 */
   function bubble(x, y, text, a) {
@@ -2639,6 +2966,7 @@
     endingEls = {
       dim: $('endDim'), couple: $('endCouple'), lovey: $('endLovey'), breakup: $('endBreakup'),
       lineA: $('endLineA'), lineB: $('endLineB'), art: $('endArt'), hero: $('endHero'), prompt: $('endPrompt'),
+      revBg: $('revBg'), revCouple: $('revCouple'), revLineA: $('revLineA'), revLineB: $('revLineB'), revBanner: $('revBanner'),
     };
   }
   function updateMoodUI() {
@@ -2696,8 +3024,10 @@
     hideOv();
     applyLayout();
     G.state = 'ready';
-    centerMsg('STAGE ' + STAGES[idx].id, STAGES[idx].name + '　/　' + STAGES[idx].theme);
-    radio(idx === 0 ? RADIO.start + '　' + RADIO.startMe : RADIO.start, 3.0);
+    const st = STAGES[idx];
+    centerMsg(st.special ? 'SPECIAL STAGE' : 'STAGE ' + st.id, st.name + '　/　' + st.theme);
+    radio(st.special ? '本部「延長戦だ。ふたりの意地ごと、平日に戻せ」'
+      : idx === 0 ? RADIO.start + '　' + RADIO.startMe : RADIO.start, 3.0);
     Audio2.duck(false);
     Audio2.startBgm();
     const token = ++startToken;
@@ -2709,7 +3039,7 @@
   function buildStageList() {
     const list = $('stageList');
     list.innerHTML = '';
-    STAGES.forEach((s, i) => {
+    NORMAL.forEach((s, i) => {
       const b = document.createElement('button');
       b.className = 'slot';
       const open = i + 1 <= save.unlocked;
@@ -2725,7 +3055,24 @@
       b.addEventListener('click', () => { if (open) { Audio2.se.ui(); startStage(i); } });
       list.appendChild(b);
     });
-    /* 全ステージ制覇で解放。何度でも再生できる */
+    /* 全制覇の後に出現する特別ステージ。何度でも遊べる */
+    if (save.specialUnlocked) {
+      const sp = STAGES.find((x) => x.special), si = STAGES.indexOf(sp);
+      const best = bests()[sp.id];
+      const b = document.createElement('button');
+      b.className = 'slot special';
+      b.innerHTML = '<span class="no">SP</span><span><span class="nm">' + sp.name + '</span>'
+        + '<span class="th">' + sp.theme + '　/　イルミ ' + sp.targets.length + '個・制限 ' + sp.time + '秒</span></span>'
+        + '<span class="best">' + (best ? '<b>' + best.rank + '</b>' + best.score.toLocaleString()
+          : save.specialSeen ? '<b>–</b>未挑戦' : '<b class="new">NEW</b>') + '</span>';
+      b.addEventListener('click', () => {
+        Audio2.se.ui();
+        save.specialSeen = true; putSave(); updateTitleBadge();
+        startStage(si);
+      });
+      list.appendChild(b);
+    }
+    /* 全ステージ制覇で解放。何度でも再生できる（復縁の場面まで） */
     if (save.allClearEndingUnlocked) {
       const b = document.createElement('button');
       b.className = 'slot ending';
@@ -2738,7 +3085,14 @@
   }
   function updateTitleBadge() {
     const b = $('newEnding');
-    if (b) b.hidden = !(save.allClearEndingUnlocked && !save.allClearEndingSeen);
+    if (!b) return;
+    if (save.specialUnlocked && !save.specialSeen) {
+      b.textContent = '特別ステージ「青の回廊」が出現しました（ステージ選択から）';
+      b.hidden = false;
+    } else if (save.allClearEndingUnlocked && !save.allClearEndingSeen) {
+      b.textContent = '新しいエンディングが解放されました（ステージ選択から）';
+      b.hidden = false;
+    } else b.hidden = true;
   }
 
   /* ---------- 入力 ---------- */
@@ -3000,7 +3354,7 @@
     $('briefMove').textContent = !touchMode ? 'WASD / 矢印キー（スマホは' + (drag ? '主人公を直接ドラッグ' : 'スティック') + '）'
       : drag ? '主人公を指でつかんで動かす' : '画面下のスティック';
     $('briefSab').textContent = !touchMode ? '近づいてスペースキー（スマホは「工作」ボタン）' : '近づいて「工作」ボタン';
-    $('protoStats').innerHTML = protoStatsHtml();
+    if ($('protoStats')) $('protoStats').innerHTML = protoStatsHtml();
   }
   function protoStatsHtml() {
     const row = (m) => {
@@ -3086,7 +3440,7 @@
     on('btnQuit', () => { Audio2.stopBgm(); G.stage = null; G.state = 'title'; showOv('ovTitle'); });
     on('btnSelect2', () => { buildStageList(); showOv('ovSelect'); });
     on('btnSelect3', () => { buildStageList(); showOv('ovSelect'); });
-    on('btnNext', () => startStage(Math.min(G.stageIdx + 1, STAGES.length - 1)));
+    on('btnNext', () => startStage(Math.min(G.stageIdx + 1, NORMAL.length - 1)));
     on('btnEnding', () => startEnding(true, 'ovResult'));
     on('btnWipe', () => {
       if (!confirm('記録と設定を消去しますか？（操作の配置も初期化されます）')) return;
@@ -3192,6 +3546,17 @@
     allCleared: () => allCleared(),
     loadSave: () => loadSave(),
     migrateControls: (c, had, lefty) => migrateControls(c, had, lefty),
+    NORMAL: NORMAL,
+    /* t 以外を工作済みにする（得点は付けない）。最後の1個の検証用 */
+    leaveOnly(t) {
+      G.targets.forEach((x) => { if (x !== t) { x.done = true; G.remainW -= x.w; } });
+      G.remainW = Math.max(t.done ? 0 : t.w, G.remainW);
+      G.mood = 100 * G.remainW / G.totalW;
+    },
+    buildMobs: (st) => buildMobs(st),
+    walkPick: (k, vx, vy) => walkPick(k, vx, vy),
+    img: (k) => !!IMG[k],
+    workMul: () => workMul(),
     openLayoutEditor: () => openLayoutEditor(),
     editor: editor,
   };

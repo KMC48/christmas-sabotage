@@ -9,3 +9,8 @@ __pycache__/
 
 # 作業中の一時出力
 game/assets/*_orig.png
+
+# 参考写真（第三者の写真。公開リポジトリには載せない）
+画像素材/参考写真_v4/
+/aono-dokutsu-top_41.jpg
+/*Henry-the-Moose*.jpg

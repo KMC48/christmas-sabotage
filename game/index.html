@@ -298,6 +298,25 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
 #endHero span{display:block; font-family:var(--disp); font-size:calc(var(--u)*34); color:var(--gold); line-height:1.1}
 #endHero small{display:block; margin-top:calc(var(--u)*6); font-family:var(--hud); font-size:max(calc(var(--u)*12), 12px);
   letter-spacing:.24em; color:#B9C4DA}
+/* 復縁：青いLEDに埋め尽くされた街（背景の粒は CSS で描く） */
+#revBg{position:absolute; inset:0; opacity:0;
+  background:
+    radial-gradient(circle, rgba(150,195,255,.9) 1.1px, transparent 1.7px) 0 0 / 18px 18px,
+    radial-gradient(circle, rgba(90,150,255,.7) 1px, transparent 1.6px) 9px 9px / 18px 18px,
+    radial-gradient(120% 70% at 50% 28%, #1B3FA8 0%, #0A1648 48%, #04081E 100%)}
+#revCouple{position:absolute; left:50%; top:13%; width:100%; transform:translateX(-50%); opacity:0; text-align:center}
+#revArtFig{margin:0; width:100%; aspect-ratio:3/2}
+#revArtFig img{width:100%; height:100%; object-fit:contain; display:block}
+#revArtFig.none{display:none}
+#revCoupleImg{height:calc(var(--u)*400); width:auto; display:inline-block;
+  filter:drop-shadow(0 0 calc(var(--u)*18) rgba(120,170,255,.55))}
+#ovEnding.hasRevArt #revCoupleImg{display:none}
+#revLineA{top:62%}
+#revLineB{top:69%; font-family:var(--disp); font-size:max(calc(var(--u)*24), 17px); color:#FFD9A8; transform-origin:center}
+#revBanner{position:absolute; left:0; right:0; bottom:13%; text-align:center; opacity:0}
+#revBanner small{display:block; font-family:var(--hud); font-size:13px; letter-spacing:.34em; color:#9CC4FF}
+#revBanner span{display:block; margin-top:calc(var(--u)*6); font-family:var(--disp); font-size:calc(var(--u)*40); color:#DCEBFF;
+  text-shadow:0 0 calc(var(--u)*26) rgba(80,140,255,.9)}
 #endPrompt{position:absolute; left:0; right:0; bottom:4%; text-align:center; opacity:0; transition:opacity .4s;
   font-family:var(--hud); font-size:13px; letter-spacing:.24em; color:#8FA0C0}
 
@@ -335,6 +354,8 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
   font-variant-numeric:tabular-nums}
 #protoStats th:first-child{text-align:left; color:var(--text)}
 .slot.ending{border-color:rgba(255,125,176,.55)}
+.slot.special{border-color:rgba(90,150,255,.7); background:linear-gradient(90deg, rgba(27,63,168,.35), rgba(20,27,48,.75))}
+.slot.special .no{color:#9CC4FF}
 .slot.ending .no{color:#FFB3D1}
 .slot .best b.new{font-family:var(--hud); font-size:12px; color:#FFB3D1; letter-spacing:.14em}
 
@@ -396,20 +417,14 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
     <div class="pad">
       <div id="titleMark">OPERATION / 聖夜無力化</div>
       <h1 id="titleMain">クリスマス<br><em>粉砕</em>大作戦</h1>
-      <p id="titleLead">黒コートの工作員として街の電飾に潜入し、イルミネーションを冷白色に変えていけ。任務は各スポットの聖夜ムードを 0% にすること。人には一切手を出さない。落とすのは照明だけだ。</p>
+      <p id="titleLead">黒コートの工作員として街の電飾に潜入し、イルミネーションを冷白色に変えていけ。任務は、街のイルミをすべて落とすこと。人には一切手を出さない。落とすのは照明だけだ。</p>
       <div id="brief">
         <div><b>移動</b><span id="briefMove">左スティック</span></div>
         <div><b>工作</b><span id="briefSab">近づいて右の工作ボタン</span></div>
         <div><b>注意</b><span>視線に入り続けると発見される</span></div>
+        <div><b>時間</b><span>金色のトナカイを落とすと制限時間 +10秒</span></div>
       </div>
       <button class="btn primary" id="btnStart">任務開始</button>
-      <div class="modePick"><span>操作</span>
-        <div class="seg" role="group" aria-label="操作方法">
-          <button data-mode="stick" aria-pressed="true">スティック</button>
-          <button data-mode="drag" aria-pressed="false">主人公ドラッグ</button>
-        </div>
-      </div>
-      <div class="modeNote">同じステージを両方式で遊び比べられます。初移動・初工作までの秒数などは「設定」に記録されます。</div>
       <div class="row">
         <button class="btn" id="btnSelect">ステージ選択</button>
         <button class="btn" id="btnSettings">設定</button>
@@ -452,7 +467,6 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
         <button class="btn" id="btnSelect2">ステージ選択</button>
       </div>
       <button class="btn ghost" id="btnEnding">エンディングを見る</button>
-      <div class="protoNote" id="protoNote"></div>
     </div>
   </section>
 
@@ -467,7 +481,6 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
       </div>
       <button class="btn primary" id="btnRetry">もう一度</button>
       <button class="btn" id="btnSelect3">ステージ選択</button>
-      <div class="protoNote" id="protoNoteF"></div>
     </div>
   </section>
 
@@ -482,6 +495,15 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
     <p id="endLineA" class="endLine">女性「……もう、終わりにしよう」</p>
     <p id="endLineB" class="endLine">男性「……ああ」</p>
     <div id="endHero"><img src="assets/v3/player_agent_success.png" alt=""><div><span>任務、完了</span><small>ALL MISSIONS COMPLETE</small></div></div>
+    <!-- v4：別れたふたりが復縁し、特別ステージが出現する -->
+    <div id="revBg"></div>
+    <div id="revCouple">
+      <figure id="revArtFig" class="none"><img id="revArt" alt="意地でもデートをすると決めたふたりと、青い光に埋め尽くされた街"></figure>
+      <img id="revCoupleImg" src="assets/v3/npc_couple_lovey.png" alt="">
+    </div>
+    <p id="revLineA" class="endLine">女性「……やっぱり、諦めきれない」</p>
+    <p id="revLineB" class="endLine">男性「意地でも、クリスマスデートをする！」</p>
+    <div id="revBanner"><small>SPECIAL STAGE</small><span>青の回廊、出現</span></div>
     <div id="endPrompt">TAP TO CONTINUE</div>
   </section>
 
@@ -507,8 +529,8 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
       <div class="setGroup">
         <div class="lbl"><span>操作方法</span></div>
         <div class="seg" role="group" aria-label="操作方法">
-          <button data-mode="stick" aria-pressed="true">スティック</button>
-          <button data-mode="drag" aria-pressed="false">主人公ドラッグ</button>
+          <button data-mode="stick" aria-pressed="true">スティック（標準）</button>
+          <button data-mode="drag" aria-pressed="false">主人公ドラッグ（試験的）</button>
         </div>
         <div class="lbl"><span>操作位置</span><small id="presetNote"></small></div>
         <div class="seg" role="group" aria-label="操作位置">
@@ -517,7 +539,6 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
           <button data-preset="bl" aria-pressed="false">左下</button>
         </div>
         <button class="btn" id="btnLayout">位置を調整</button>
-        <div id="protoStats"></div>
       </div>
       <button class="btn" id="btnSetBack">閉じる</button>
       <button class="btn ghost" id="btnWipe">記録を消去</button>

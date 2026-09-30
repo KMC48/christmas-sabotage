@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-『クリスマス粉砕大作戦』受入テスト（v3：A01〜A18 ＋ v2 からの回帰確認）
+『クリスマス粉砕大作戦』受入テスト（v4：V01〜V10 ＋ v3のA01〜A18 ＋ v2 からの回帰確認）
 
 実ブラウザ（Playwright/Chromium）で index.html を開き、window.XMAS の固定dtで
 ゲーム内時間を進めて検証する。setTimeout の実時間待ちに依存しないので結果は再現する。
@@ -135,7 +135,7 @@ def main():
         check('A03a', '期限を過ぎると親密化で確定', r['missed']['outcome'] == 'missed' and r['missed']['mood'] == 'lovey', r['missed'])
         check('A03b', '期限後の消灯でも親密なまま（巻き戻さない）', r['after']['outcome'] == 'missed' and r['after']['mood'] == 'lovey')
         check('A03c', '期限後の消灯は通常点・通常のムード減少だけ（+500なし）',
-              r['gained'] == r['base'] and r['moodDrop'] == r['tMood'] and r['just'] == 0, r)
+              r['gained'] == r['base'] and abs(r['moodDrop'] - r['tMood']) < 1e-6 and r['just'] == 0, r)
         check('A03d', '主人公の一言は「……手遅れか」', '「……手遅れか」' in r['lines'], r['lines'])
         r = js(page, """() => {
           XMAS.beginPlay(0);                      // STAGE1 はデートのカップルとオーラのカップルが同じ
@@ -237,7 +237,7 @@ def main():
         print('\nA07 吸着と配置（外から電源に届く・行き詰まりがない）')
         r = js(page, """() => {
           const C = XMAS.CFG.aura, out = [];
-          for (let i = 0; i < 5; i++) {
+          for (let i = 0; i < XMAS.STAGES.length; i++) {
             XMAS.beginPlay(i);
             const G = XMAS.G, rr = (a) => a.r + C.playerR;
             const inside = (x, y) => G.auras.some(a => a.on && Math.hypot(x - a.x, y - a.y) < rr(a));
@@ -254,7 +254,7 @@ def main():
             });
             /* 電源が別のオーラの内側にない（循環依存なし）・スタート地点が輪の外 */
             const srcInside = G.auras.filter(a => G.auras.some(b => b !== a && Math.hypot(a.source.x - b.x, a.source.y - b.y) < rr(b))).length;
-            out.push({ stage: i + 1, auras: G.auras.length, stuck, srcInside, startOut: !inside(G.player.x, G.player.y),
+            out.push({ stage: G.stage.special ? 'SP' : i + 1, auras: G.auras.length, stuck, srcInside, startOut: !inside(G.player.x, G.player.y),
                        minSrcGap: Math.min(...G.auras.map(a => Math.hypot(a.source.x - a.x, a.source.y - a.y) - rr(a) - 42)) });
           }
           return out;
@@ -286,7 +286,7 @@ def main():
         r = js(page, """() => {
           XMAS.beginPlay(0);
           const G = XMAS.G, ev = G.events[0], t = ev.target;
-          G.mood = t.mood; G.left = 0.05;
+          XMAS.leaveOnly(t); G.left = 0.05;
           XMAS.setEvT(ev, 3.0);
           XMAS.sabotage(t);
           XMAS.step(1/60);
@@ -330,12 +330,12 @@ def main():
 
         # ================================================================ A10
         print('\nA10 全ステージ制覇')
-        fresh(page, {'unlocked': 5, 'best3': {'1': {'score': 1, 'time': 9, 'rank': 'C'}, '2': {'score': 1, 'time': 9, 'rank': 'C'},
+        fresh(page, {'unlocked': 5, 'best4': {'1': {'score': 1, 'time': 9, 'rank': 'C'}, '2': {'score': 1, 'time': 9, 'rank': 'C'},
                                               '3': {'score': 1, 'time': 9, 'rank': 'C'}, '4': {'score': 1, 'time': 9, 'rank': 'C'}}})
         r = js(page, """() => {
           const before = XMAS.save.allClearEndingUnlocked;
           XMAS.beginPlay(4);
-          const G = XMAS.G; G.mood = G.targets[0].mood;
+          const G = XMAS.G; XMAS.leaveOnly(G.targets[0]);
           XMAS.sabotage(G.targets[0]); XMAS.step(1/60);
           return { before, after: XMAS.save.allClearEndingUnlocked, state: G.state, ending: !!G.ending,
                    firstAll: G.result.firstAll };
@@ -349,25 +349,27 @@ def main():
         r = js(page, """() => {
           const early = XMAS.skipEnding();
           XMAS.run(0.3, 1/60);
-          const late = XMAS.skipEnding();
+          const toRevival = XMAS.skipEnding() && XMAS.G.ending && XMAS.G.ending.t >= XMAS.CFG.ending.revival;
+          XMAS.run(0.3, 1/60);
+          const late = toRevival && XMAS.skipEnding();
           return { early, late, state: XMAS.G.state, head: document.getElementById('resultHead').textContent,
                    sub: document.getElementById('resultSub').textContent,
                    art: document.getElementById('resultArt').getAttribute('src'), seen: XMAS.save.allClearEndingSeen };
         }""")
-        check('A11a', '0.25秒後から新しい入力でスキップ → 全任務達成の結果へ',
+        check('A11a', '0.25秒後の入力で復縁の場面へ、もう一度で全任務達成の結果へ',
               not r['early'] and r['late'] and r['state'] == 'result' and r['head'] == '全任務達成'
               and r['sub'] == '聖夜、完全終了。' and 'ending_all_clear' in (r['art'] or ''), r)
         page.reload(); page.wait_for_function("() => !!window.XMAS"); page.evaluate("() => XMAS.setAuto(false)")
         r = js(page, """() => {
           const u = XMAS.save.allClearEndingUnlocked, s = XMAS.save.allClearEndingSeen;
           const slot = !!document.querySelector('.slot.ending');
-          const b0 = JSON.stringify(XMAS.save.best3);
-          XMAS.startEnding(true, 'ovSelect'); XMAS.run(6.0, 1/60); XMAS.skipEnding();
-          const b1 = JSON.stringify(XMAS.save.best3);
+          const b0 = JSON.stringify(XMAS.save.best4);
+          XMAS.startEnding(true, 'ovSelect'); XMAS.run(10.5, 1/60); XMAS.skipEnding();
+          const b1 = JSON.stringify(XMAS.save.best4);
           const back = document.getElementById('ovSelect').classList.contains('on');
           /* 2回目の全制覇（既に解放済み）は通常の成功演出 */
           XMAS.beginPlay(4);
-          const G = XMAS.G; G.mood = G.targets[0].mood;
+          const G = XMAS.G; XMAS.leaveOnly(G.targets[0]);
           XMAS.sabotage(G.targets[0]); XMAS.step(1/60);
           return { u, s, slot, same: b0 === b1, back, second: G.state };
         }""")
@@ -383,10 +385,10 @@ def main():
         fresh(page, old)
         r = js(page, """() => ({ c: XMAS.save.controls, unlocked: XMAS.save.unlocked, bgm: XMAS.save.bgm, lite: XMAS.save.lite,
                                 best1: XMAS.save.best[1].score, best2: Object.keys(XMAS.save.best2).length,
-                                best3: Object.keys(XMAS.save.best3).length,
+                                best3: Object.keys(XMAS.save.best4).length,
                                 end: XMAS.save.allClearEndingUnlocked, seen: XMAS.save.allClearEndingSeen,
                                 state: XMAS.G.state, ending: !!XMAS.G.ending })""")
-        check('A12a', '解放・設定・旧記録（版1/版2）を保持し、版3は空', r['unlocked'] == 5 and r['bgm'] is False and r['lite'] is True
+        check('A12a', '解放・設定・旧記録（版1/版2）を保持し、今回の版4は空', r['unlocked'] == 5 and r['bgm'] is False and r['lite'] is True
               and r['best1'] == 9999 and r['best2'] == 5 and r['best3'] == 0, r)
         check('A12b', '旧「左利きOFF」＝左側スティック → 左下へ移行', r['c']['preset'] == 'bl' and r['c']['mode'] == 'stick', r['c'])
         check('A12c', '旧版の全クリア証跡で破局エンドを解放（起動時に強制再生しない）',
@@ -621,7 +623,7 @@ def main():
                   and min(r['stick']) >= 44 and r['hscroll'], r)
             r = js(page, """() => {
               XMAS.beginPlay(0);
-              const G = XMAS.G; G.mood = G.targets[0].mood;
+              const G = XMAS.G; XMAS.leaveOnly(G.targets[0]);
               XMAS.sabotage(G.targets[0]); XMAS.step(1/60); XMAS.run(2.0, 1/60);
               const ov = document.getElementById('ovResult');
               const btn = document.getElementById('btnRetry2');
@@ -653,7 +655,7 @@ def main():
           Storage.prototype.setItem = function () { throw new Error('QuotaExceeded'); };
           try {
             XMAS.beginPlay(0);
-            const G = XMAS.G; G.mood = G.targets[0].mood;
+            const G = XMAS.G; XMAS.leaveOnly(G.targets[0]);
             XMAS.sabotage(G.targets[0]); XMAS.step(1/60); XMAS.run(2.0, 1/60);
             return { state: G.state, total: G.result && G.result.total };
           } finally { Storage.prototype.setItem = orig; }
@@ -671,18 +673,12 @@ def main():
         # ================================================================ v2 からの回帰確認
         print('\nR  v2 からの回帰確認')
         fresh(page)
-        r = js(page, """() => {
-          const st = XMAS.STAGES[0], mul = st.moodMul;
-          const m = st.targets.map(t => Math.round(XMAS.SAB[t.type].mood * mul)).sort((a, b) => b - a);
-          const sum = (a) => a.reduce((x, y) => x + y, 0);
-          return { n: m.length, total: sum(m), top5: sum(m.slice(0, 5)), top6: sum(m.slice(0, 6)), low7: sum(m.slice(-7)),
-                   others: XMAS.STAGES.slice(1).map(s => [s.targets.length, s.time,
-                     s.targets.reduce((a, t) => a + XMAS.SAB[t.type].mood, 0)]) };
-        }""")
-        check('R01', 'ステージ1：8対象・合計132・6〜7回でクリア', r['n'] == 8 and r['total'] == 132 and r['top5'] == 96
-              and r['top6'] >= 100 and r['low7'] >= 100, r)
-        check('R02', 'ステージ2〜5の対象数・時間・ムード総量は不変',
-              r['others'] == [[12, 85, 122], [12, 80, 128], [12, 85, 149], [12, 80, 162]], r['others'])
+        r = js(page, """() => XMAS.STAGES.map(s => ({ id: s.special ? 'SP' : s.id, n: s.targets.length, time: s.time,
+                   led: s.targets.filter(t => t.type === 'led').length,
+                   reindeer: s.targets.filter(t => t.type === 'reindeer').length }))""")
+        check('R01', '大型LED（テレビ）は置かない', all(x['led'] == 0 for x in r), r)
+        check('R02', '各ステージに時間延長のトナカイ（通常1〜2体・特別4体）',
+              all((1 <= x['reindeer'] <= 2) if x['id'] != 'SP' else x['reindeer'] == 4 for x in r), r)
         r = js(page, """() => {
           XMAS.beginPlay(0);
           const G = XMAS.G, ev = G.events[0], t = ev.target;
@@ -732,7 +728,7 @@ def main():
         r = js(page, """() => {
           XMAS.beginPlay(0);
           const G = XMAS.G, t = G.targets[0];
-          G.mood = t.mood;
+          XMAS.leaveOnly(t);
           XMAS.sabotage(t);
           G.detect = 99.99;
           G.guards.forEach(g => { g.range = 9999; g.fov = 3.2; g.x = G.player.x; g.y = G.player.y - 20; });
@@ -742,14 +738,144 @@ def main():
         check('R06', '同一フレームの勝敗は敗北が優先・二重保存なし', r['state'] == 'failing' and not r['result'] and r['best'] == 0, r)
         r = js(page, """() => {
           XMAS.beginPlay(0);
-          const G = XMAS.G; G.score = 0; G.mood = G.targets[0].mood; G.left = 40;
+          const G = XMAS.G; G.score = 0; XMAS.leaveOnly(G.targets[0]); G.left = 40;
           XMAS.sabotage(G.targets[0]); XMAS.step(1/60);
           const res = G.result; XMAS.run(2.0, 1/60);
           return { total: res.total, expect: Math.round(res.leftAtWin * 50) + 300, still: G.left === res.leftAtWin };
         }""")
         check('R07', 'タイムボーナスは演出前の残り時間・演出中に減らない', r['total'] == r['expect'] and r['still'], r)
         r = js(page, """() => XMAS.STAGES.map(s => ({ id: s.id, ev: (s.events || []).length, auras: (s.auras || []).length }))""")
-        check('R08', '全5ステージに固有のデート1つ・オーラ1〜2か所', all(x['ev'] >= 1 and 1 <= x['auras'] <= 2 for x in r), r)
+        check('R08', '全ステージ（特別含む）に固有のデート1つ・オーラ1〜2か所', all(x['ev'] >= 1 and 1 <= x['auras'] <= 2 for x in r), r)
+
+        # ================================================================ v4
+        print('\nV  v4：全イルミ・時間延長・フィーバー・通行カップル・向き・特別ステージ')
+        fresh(page)
+        r = js(page, """() => {
+          const out = [];
+          for (let i = 0; i < XMAS.STAGES.length; i++) {
+            XMAS.beginPlay(i);
+            const G = XMAS.G, n = G.targets.length;
+            let beforeLast = null;
+            G.targets.forEach((t, k) => {
+              if (k === n - 1) { XMAS.step(1/60); beforeLast = { state: G.state, mood: G.mood }; }
+              XMAS.sabotage(t);
+            });
+            XMAS.step(1/60);
+            out.push({ id: G.stage.id, beforeLast, after: G.state, mood: G.mood });
+          }
+          return out;
+        }""")
+        check('V01', '全ステージ：最後の1個を残すと続行、すべて工作でクリア（ムード0%）',
+              all(x['beforeLast']['state'] == 'playing' and x['beforeLast']['mood'] > 0
+                  and x['after'] in ('finishing', 'ending') and x['mood'] == 0 for x in r), r)
+        r = js(page, """() => {
+          XMAS.beginPlay(0);
+          const G = XMAS.G, t = G.targets.find(x => x.type === 'reindeer'), other = G.targets.find(x => x.type === 'tree');
+          const l0 = G.left; XMAS.sabotage(other); const l1 = G.left; XMAS.sabotage(t);
+          return { plain: l0 - l1, bonus: G.left - l1, count: G.bonusCount };
+        }""")
+        check('V02', '金色のトナカイの工作で制限時間+10秒（ほかのイルミでは増えない）',
+              abs(r['plain']) < 1e-9 and abs(r['bonus'] - 10) < 1e-9 and r['count'] == 1, r)
+        r = js(page, """() => {
+          XMAS.beginPlay(0); const G = XMAS.G;
+          const m = []; for (const c of [1, 3, 9, 10, 25]) { G.combo = c; m.push(XMAS.workMul()); }
+          return m;
+        }""")
+        check('V03', '工作時間：3連鎖 ×0.84、10連鎖以上（フィーバー） ×0.7', r == [1, 0.84, 0.84, 0.7, 0.7], r)
+        r = js(page, """() => {
+          const out = [];
+          for (let i = 0; i < XMAS.STAGES.length; i++) {
+            XMAS.beginPlay(i);
+            const G = XMAS.G, st = G.stage;
+            let near = 0;
+            for (const m of G.mobs) {
+              const segD = (px, py) => Math.hypot(px < m.x0 ? m.x0 - px : px > m.x1 ? px - m.x1 : 0, py - m.y);
+              if (G.targets.some(t => segD(t.x, t.y) < 70)) near++;
+              if (G.auras.some(a => segD(a.x, a.y) < a.r + 44)) near++;
+            }
+            out.push({ id: st.id, want: st.mobs, got: G.mobs.length, near });
+          }
+          return out;
+        }""")
+        check('V04a', '通行人は全員カップル・指定数を配置・イルミやオーラに重ならない',
+              all(x['want'] == x['got'] and x['near'] == 0 for x in r), r)
+        r = js(page, """() => {
+          XMAS.beginPlay(1);
+          const G = XMAS.G, m = G.mobs[0];
+          const t = G.targets.reduce((a, b) => Math.hypot(b.x - m.x, b.y - m.y) < Math.hypot(a.x - m.x, a.y - m.y) ? b : a);
+          const d = Math.hypot(t.x - m.x, t.y - m.y);
+          XMAS.sabotage(t);
+          const far = G.mobs.filter(x => Math.hypot(x.x - t.x, x.y - t.y) > XMAS.CFG.mobReactR).every(x => !x.mood);
+          /* 視線を遮る */
+          const blocks = (() => { const g = { x: m.x - 120, y: m.y - 20 }, q = { x: m.x + 120, y: m.y - 20 }; G.player.x = q.x; G.player.y = q.y; return true; })();
+          return { d, mood: d <= XMAS.CFG.mobReactR ? m.mood : 'skip', far };
+        }""")
+        check('V04b', '近くのイルミが消えた通行カップルだけが冷める', (r['mood'] in ('dejected', 'skip')) and r['far'], r)
+        r = js(page, """() => ({
+          gr: XMAS.walkPick('guard', 50, 0), gl: XMAS.walkPick('guard', -50, 0), gu: XMAS.walkPick('guard', 0, -50),
+          cr: XMAS.walkPick('couple', 30, 0), cl: XMAS.walkPick('couple', -30, 0),
+          pl: XMAS.walkPick('player', -1, 0), pr: XMAS.walkPick('player', 1, 0),
+          side: XMAS.img('npc_guard_walk_side'),
+        })""")
+        if not r['side']:
+            ok = (r['gr']['key'] == 'npc_guard_check' and r['gr']['flip'] and not r['gl']['flip']
+                  and r['cr']['key'] == 'npc_couple_tunnel' and r['cr']['flip'] and not r['cl']['flip']
+                  and r['pl']['flip'] and not r['pr']['flip'])
+        else:
+            ok = not r['gr']['flip'] and r['gl']['flip']
+        check('V05', '歩く向き：左右の進行方向に合わせて絵を反転（後ろ向き歩きをしない）', ok, r)
+        r = js(page, """() => XMAS.STAGES.map(s => s.targets.filter(t => ['gift', 'snowman', 'reindeer'].includes(t.type)).length)""")
+        check('V06', 'ステージ5はテレビではなくプレゼント・雪だるま・トナカイ', r[4] >= 4, r)
+        fresh(page)
+        r = js(page, """() => {
+          const locked = !XMAS.save.specialUnlocked && !document.querySelector('.slot.special');
+          const n = XMAS.NORMAL.length;
+          XMAS.save.best4 = { 1: {score:1,time:9,rank:'C'}, 2: {score:1,time:9,rank:'C'}, 3: {score:1,time:9,rank:'C'}, 4: {score:1,time:9,rank:'C'} };
+          XMAS.beginPlay(4);
+          const G = XMAS.G; XMAS.leaveOnly(G.targets[0]); XMAS.sabotage(G.targets[0]); XMAS.step(1/60);
+          XMAS.run(10.5, 1/60); XMAS.skipEnding();
+          const unlocked = XMAS.save.specialUnlocked;
+          document.getElementById('btnSelect2').click();
+          const slot = !!document.querySelector('.slot.special');
+          const si = XMAS.STAGES.findIndex(s => s.special);
+          const unlockedBefore = XMAS.save.unlocked;
+          XMAS.beginPlay(si);
+          const G2 = XMAS.G; XMAS.leaveOnly(G2.targets[0]); XMAS.sabotage(G2.targets[0]); XMAS.step(1/60); XMAS.run(2.2, 1/60);
+          return { locked, n, unlocked, slot, head: document.getElementById('resultHead').textContent,
+                   next: document.getElementById('btnNext').style.display, unlockedSame: XMAS.save.unlocked === unlockedBefore,
+                   spBest: !!XMAS.bests()[6], allCleared: XMAS.allCleared() };
+        }""")
+        check('V07a', '特別ステージは全制覇まで出ない（通常は5ステージ）', r['locked'] and r['n'] == 5, r)
+        check('V07b', '全制覇でエンディング後に出現し、ステージ選択に並ぶ', r['unlocked'] and r['slot'], r)
+        check('V07c', '特別ステージの結果（延長戦、終了）・次のステージ無し・記録は別枠',
+              r['head'] == '延長戦、終了' and r['next'] == 'none' and r['spBest'] and r['unlockedSame'] and r['allCleared'], r)
+        fresh(page, {'unlocked': 5, 'allClearEndingUnlocked': True, 'allClearEndingSeen': True})
+        r = js(page, "() => ({ sp: XMAS.save.specialUnlocked, seen: XMAS.save.specialSeen, badge: !document.getElementById('newEnding').hidden, text: document.getElementById('newEnding').textContent })")
+        check('V08', '全制覇済みのセーブにも特別ステージを出し、タイトルで知らせる', r['sp'] and not r['seen'] and r['badge'] and '青の回廊' in r['text'], r)
+        r = js(page, """() => {
+          XMAS.beginPlay(0);
+          const G = XMAS.G, t = G.targets[0];
+          G.player.x = t.x + 40; G.player.y = t.y + 10; G.player.face = Math.PI; XMAS.step(1/60);
+          XMAS.startAction();
+          for (let i = 0; i < 60 && !t.done; i++) XMAS.step(1/60);
+          const stale = G.candidate;
+          G.candidate = t;              // 完了直後の1フレームに残ったロックを再現
+          XMAS.startAction();
+          const started = !!G.action;
+          XMAS.run(1.0, 1/60);
+          return { done: t.done, started, stuck: !!G.action };
+        }""")
+        check('V09', '完了直後に工作ボタンを押しても、完了済みの対象で固まらない', r['done'] and not r['started'] and not r['stuck'], r)
+        r = js(page, """() => {
+          XMAS.startEnding(true, 'ovSelect'); XMAS.run(9.9, 1/60);
+          const vis = (id) => +getComputedStyle(document.getElementById(id)).opacity;
+          const out = { lineA: vis('revLineA'), lineB: vis('revLineB'), banner: vis('revBanner'),
+                        a: document.getElementById('revLineA').textContent, b: document.getElementById('revLineB').textContent };
+          XMAS.skipEnding();
+          return out;
+        }""")
+        check('V10', '破局の後、復縁（「意地でも、クリスマスデートをする！」）と特別ステージの出現を見せる',
+              r['lineA'] > 0.9 and r['lineB'] > 0.9 and r['banner'] > 0.9 and '意地でも' in r['b'], r)
 
         # ================================================================ 実行時エラー
         print('\n実行時エラー')

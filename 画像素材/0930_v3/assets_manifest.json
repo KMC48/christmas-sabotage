@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "rulesetVersion": 3,
+  "createdAt": "2026-09-30",
+  "assetDirectory": "game/assets/v3",
+  "assetCount": 12,
+  "notes": [
+    "Character images are full-body transparent cutouts, with 12px safety padding.",
+    "For characters, anchor denotes bottom-center baseline; maintain display height across pose swaps.",
+    "Ending/result art is an opaque 3:2 panel; use contain rather than portrait cover.",
+    "FX SVG and PNG are alternate representations of the same three effects."
+  ],
+  "assets": [
+    {
+      "id": "npc_couple_dejected",
+      "file": "game/assets/v3/npc_couple_dejected.png",
+      "width": 558,
+      "height": 768,
+      "mode": "RGBA",
+      "use": "通常の期限内工作成功",
+      "transparent": true,
+      "anchorNormalized": [
+        0.5,
+        0.984375
+      ],
+      "displayScaleBasis": "visible-body-height",
+      "bodyHeightPx": 744,
+      "safePaddingPx": 12,
+      "sha256": "76803adad6c200147c1235cc49bc480f050457bd00490daba72445bfed59a4c6"
+    },
+    {
+      "id": "npc_couple_heartbroken",
+      "file": "game/assets/v3/npc_couple_heartbroken.png",
+      "width": 547,
+      "height": 768,
+      "mode": "RGBA",
+      "use": "ジャスト工作成功",
+      "transparent": true,
+      "anchorNormalized": [
+        0.5,
+        0.984375
+      ],
+      "displayScaleBasis": "visible-body-height",
+      "bodyHeightPx": 744,
+      "safePaddingPx": 12,
+      "sha256": "c58d1cbb53e8a7c5387ad98fd9075838e4598265ce7e50a534094072bd13b4a0"
+    },
+    {
+      "id": "npc_couple_lovey",
+      "file": "game/assets/v3/npc_couple_lovey.png",
+      "width": 467,
+      "height": 768,
+      "mode": "RGBA",
+      "use": "デートの期限切れ",
+      "transparent": true,
+      "anchorNormalized": [
+        0.5,
+        0.984375
+      ],
+      "displayScaleBasis": "visible-body-height",
+      "bodyHeightPx": 744,
+      "safePaddingPx": 12,
+      "sha256": "e3c9dde4db358448a38110b30d51560df1b5d85002d16cb79a1402bc9cf08111"
+    },
+    {
+      "id": "player_agent_success",
+      "file": "game/assets/v3/player_agent_success.png",
+      "width": 367,
+      "height": 768,
+      "mode": "RGBA",
+      "use": "主人公の任務達成",
+      "transparent": true,
+      "anchorNormalized": [
+        0.5,
+        0.984375
+      ],
+      "displayScaleBasis": "visible-body-height",
+      "bodyHeightPx": 744,
+      "safePaddingPx": 12,
+      "sha256": "571e8835c6f8b7a51cf5509193d2bcc8cac2458661055838f2a7d052b191a029"
+    },
+    {
+      "id": "player_agent_failure",
+      "file": "game/assets/v3/player_agent_failure.png",
+      "width": 396,
+      "height": 768,
+      "mode": "RGBA",
+      "use": "主人公の任務失敗",
+      "transparent": true,
+      "anchorNormalized": [
+        0.5,
+        0.984375
+      ],
+      "displayScaleBasis": "visible-body-height",
+      "bodyHeightPx": 744,
+      "safePaddingPx": 12,
+      "sha256": "b454126f14025b99ca6603b34cae16c814c46a258604693841f6330c79570a88"
+    },
+    {
+      "id": "result_mission_success",
+      "file": "game/assets/v3/result_mission_success.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGB",
+      "use": "通常ステージ成功結果",
+      "transparent": false,
+      "displayFit": "contain",
+      "sha256": "d668fb266270af9c38a8537cb5d0723f2528faf940c314902b3475fcc8d3b8da"
+    },
+    {
+      "id": "result_mission_failure",
+      "file": "game/assets/v3/result_mission_failure.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGB",
+      "use": "通常ステージ失敗結果",
+      "transparent": false,
+      "displayFit": "contain",
+      "sha256": "ba9c3b5ce1ea09cecf632f416b878eaa0154bbe73b4175046de0b8f4c7010f57"
+    },
+    {
+      "id": "npc_couple_breakup",
+      "file": "game/assets/v3/npc_couple_breakup.png",
+      "width": 646,
+      "height": 768,
+      "mode": "RGBA",
+      "use": "全ステージ制覇・破局",
+      "transparent": true,
+      "anchorNormalized": [
+        0.5,
+        0.984375
+      ],
+      "displayScaleBasis": "visible-body-height",
+      "bodyHeightPx": 744,
+      "safePaddingPx": 12,
+      "sha256": "50345fa3db37525755b3b9b30a9e6c6bcaffcd06583fe654de72140fa345dc04"
+    },
+    {
+      "id": "ending_all_clear_breakup",
+      "file": "game/assets/v3/ending_all_clear_breakup.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGB",
+      "use": "全ステージ制覇エンディング",
+      "transparent": false,
+      "displayFit": "contain",
+      "sha256": "a8c0c3e993e1a291e6cb6f1e14de77c09a2b0c5966f973a7a9e9872183a27381"
+    },
+    {
+      "id": "fx_love_aura_ring",
+      "file": "game/assets/v3/fx_love_aura_ring.png",
+      "vectorFile": "game/assets/v3/fx_love_aura_ring.svg",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": true,
+      "use": "通行障害の境界輪",
+      "anchorNormalized": [
+        0.5,
+        0.5
+      ],
+      "ringCenterPx": [
+        256,
+        256
+      ],
+      "ringRadiusPx": 176,
+      "suggestedWorldRadius": 56,
+      "drawSizeFormula": "imageSize * worldRadius / 176",
+      "collision": "Use game geometry, not image alpha.",
+      "sha256": "265f314fe6477f9f4e216d56ddd8880f37599005429e219aeedeed255f34e280"
+    },
+    {
+      "id": "fx_love_heart",
+      "file": "game/assets/v3/fx_love_heart.png",
+      "vectorFile": "game/assets/v3/fx_love_heart.svg",
+      "width": 128,
+      "height": 128,
+      "mode": "RGBA",
+      "transparent": true,
+      "use": "浮遊するラブラブ粒子",
+      "anchorNormalized": [
+        0.5,
+        0.5
+      ],
+      "sha256": "506b88852a570c89b637ac354cd297d8fd30b819616e7724bbded362932dcb5f"
+    },
+    {
+      "id": "fx_love_aura_break",
+      "file": "game/assets/v3/fx_love_aura_break.png",
+      "vectorFile": "game/assets/v3/fx_love_aura_break.svg",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": true,
+      "use": "消灯時のオーラ消滅",
+      "anchorNormalized": [
+        0.5,
+        0.5
+      ],
+      "sha256": "2745733e80611ae6033753dad53fc7d3bcf5e2dcd79c6fced61367d03547efba"
+    }
+  ]
+}

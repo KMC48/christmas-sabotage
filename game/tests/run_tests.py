@@ -1,556 +1,768 @@
 # -*- coding: utf-8 -*-
 """
-『クリスマス粉砕大作戦』v2 受入条件テスト（T01〜T17）
+『クリスマス粉砕大作戦』受入テスト（v3：A01〜A18 ＋ v2 からの回帰確認）
 
-実ブラウザ（Playwright/Chromium）で index.html を読み込み、
-window.XMAS の固定dtステップでゲーム内時間を進めて検証する。
-setTimeout待ちに依存しないので、結果は再現する。
+実ブラウザ（Playwright/Chromium）で index.html を開き、window.XMAS の固定dtで
+ゲーム内時間を進めて検証する。setTimeout の実時間待ちに依存しないので結果は再現する。
 
     python game/tests/run_tests.py
 
-UI の見た目（T15 の一部）と実機操作（T14 の一部）は目視確認が必要。
-このスクリプトが確認できる範囲だけを PASS として報告する。
+見た目（顔や足先が切れていないか等）と実機のタッチ操作は、このスクリプトでは確認できない。
+確認できる範囲だけを PASS として報告する。
 """
+import json
 import os
 import sys
-import json
 
 from playwright.sync_api import sync_playwright
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 INDEX = os.path.abspath(os.path.join(HERE, '..', 'index.html'))
-URL = 'file:///' + INDEX.replace('\\', '/')
+URL = 'file:///' + INDEX.replace(os.sep, '/')
 
 results = []
 
 
 def check(tid, name, ok, detail=''):
     results.append((tid, name, bool(ok), detail))
-    mark = 'PASS' if ok else 'FAIL'
-    print('  [%s] %s %s%s' % (mark, tid, name, ('  -> ' + detail) if detail else ''))
+    print('  [%s] %s %s%s' % ('PASS' if ok else 'FAIL', tid, name, ('  -> ' + str(detail)) if detail else ''))
     return ok
+
+
+def fresh(page, save=None, query=''):
+    """保存データを入れ替えて読み直し、自動ループを止める"""
+    page.evaluate("""(s) => { try { localStorage.clear(); if (s) localStorage.setItem('xmas-funsai-v1', s); } catch (e) {} }""",
+                  json.dumps(save) if save is not None else None)
+    page.goto(URL + query)
+    page.wait_for_function("() => !!window.XMAS")
+    page.evaluate("() => XMAS.setAuto(false)")
 
 
 def js(page, src, arg=None):
     return page.evaluate(src, arg)
 
 
-def clear_records(page):
-    """テスト同士が記録を持ち越さないようにする"""
-    page.evaluate("() => { XMAS.save.best2 = {}; XMAS.save.allClear2 = false; }")
-
-
-def reset(page, stage=0, clear_storage=True):
-    """ステージを開始して playing 状態にし、自動ループを止める"""
-    if clear_storage:
-        page.evaluate("() => { try { localStorage.clear(); } catch(e){} }")
-        page.reload()
-        page.wait_for_function("() => !!window.XMAS")
-    page.evaluate("(i) => { XMAS.setAuto(false); XMAS.beginPlay(i); }", stage)
-
-
 def main():
     with sync_playwright() as pw:
         b = pw.chromium.launch()
-        page = b.new_page(viewport={'width': 420, 'height': 860})
+        page = b.new_page(viewport={'width': 400, 'height': 800})
         errors = []
-        page.on('pageerror', lambda e: errors.append(str(e)))
+        page.on('pageerror', lambda e: errors.append('pageerror: ' + str(e)))
         page.on('console', lambda m: errors.append(
             'console.' + m.type + ': ' + m.text + ' @ ' + ((m.location or {}).get('url') or ''))
             if m.type == 'error' else None)
         page.goto(URL)
         page.wait_for_function("() => !!window.XMAS")
 
-        # ---------------- T09 ステージ1データ ----------------
-        print('\nT09 ステージ1データ')
-        d = js(page, """() => {
-          const st = XMAS.STAGES[0];
-          const mul = st.moodMul || 1;
-          const mood = st.targets.map(t => Math.round(XMAS.SAB[t.type].mood * mul));
-          mood.sort((a,b)=>b-a);
-          const top5 = mood.slice(0,5).reduce((a,b)=>a+b,0);
-          const top6 = mood.slice(0,6).reduce((a,b)=>a+b,0);
-          const low7 = mood.slice(-7).reduce((a,b)=>a+b,0);
-          return { n: st.targets.length, total: mood.reduce((a,b)=>a+b,0), top5, top6, low7,
-                   mul, time: st.time,
-                   others: XMAS.STAGES.slice(1).map(s => ({
-                     id: s.id, n: s.targets.length, time: s.time, mul: s.moodMul || 1,
-                     total: s.targets.reduce((a,t)=>a+Math.round(XMAS.SAB[t.type].mood*(s.moodMul||1)),0) })) };
-        }""")
-        check('T09a', '8対象・合計132', d['n'] == 8 and d['total'] == 132, 'n=%d total=%d' % (d['n'], d['total']))
-        check('T09b', '5回では不可（最大96<100）', d['top5'] == 96, 'top5=%d' % d['top5'])
-        check('T09c', '6回で可能（最大108>=100）', d['top6'] >= 100, 'top6=%d' % d['top6'])
-        check('T09d', 'どの7対象でも100以上（最小102）', d['low7'] >= 100, 'low7=%d' % d['low7'])
-        check('T09e', 'ステージ1の制限90秒・倍率1.5', d['time'] == 90 and d['mul'] == 1.5,
-              'time=%s mul=%s' % (d['time'], d['mul']))
-        exp = [(2, 12, 85, 122), (3, 12, 80, 128), (4, 12, 85, 149), (5, 12, 80, 162)]
-        ok = all(o['id'] == e[0] and o['n'] == e[1] and o['time'] == e[2]
-                 and o['total'] == e[3] and o['mul'] == 1 for o, e in zip(d['others'], exp))
-        check('T09f', 'ステージ2〜5の対象数・時間・ムードは不変', ok, json.dumps(d['others'], ensure_ascii=False))
-
-        # ---------------- T01 通常工作 ----------------
-        print('\nT01 通常工作')
-        reset(page)
+        # ================================================================ A01
+        print('\nA01 起動前／受付前／ジャスト中の工作')
+        fresh(page)
         r = js(page, """() => {
-          const G = XMAS.G;
-          const t = G.targets[0];
-          const m0 = G.mood, s0 = G.score;
-          XMAS.sabotage(t);
-          XMAS.sabotage(t);            // 二重呼び出しは無視されるはず
-          return { done: t.done, dMood: m0 - G.mood, dScore: G.score - s0,
-                   tMood: t.mood, base: t.def.score, combo: G.combo, doneCount: G.doneCount };
-        }""")
-        check('T01', '変化・基礎点・ムード減少が各1回', r['done'] and r['dMood'] == r['tMood']
-              and r['dScore'] == r['base'] and r['doneCount'] == 1,
-              'mood-%d score+%d done=%d' % (r['dMood'], r['dScore'], r['doneCount']))
-        check('T01b', 'ステージ1倍率1.5が効いている（街路樹8→12）', r['tMood'] == 12, 'tMood=%d' % r['tMood'])
-
-        # ---------------- T02 ジャスト窓の境界 ----------------
-        print('\nT02 ジャスト窓の境界（完了時刻で判定）')
-        bounds = js(page, """() => {
           const out = {};
-          const mk = (evT) => {
-            XMAS.setAuto(false); XMAS.beginPlay(0);
-            const G = XMAS.G, ev = G.events[0];
-            ev.phase = 'beat'; ev.t = evT;
-            const t = ev.target;
+          const go = (evT) => {
+            XMAS.beginPlay(0);
+            const G = XMAS.G, ev = G.events[0], t = ev.target;
+            if (evT !== null) XMAS.setEvT(ev, evT);
             const s0 = G.score;
             XMAS.sabotage(t);
-            return G.score - s0 - t.def.score * G.combo;   // +500 が乗ったか
+            return { outcome: ev.outcome, mood: ev.couple.mood, bonus: G.score - s0 - t.def.score * G.combo,
+                     just: G.just, phase: ev.phase };
           };
-          const W = XMAS.CFG.event;
-          const open = W.windup - W.justBefore, close = W.windup + W.justAfter;
-          out.atOpen   = mk(open);
-          out.atClose  = mk(close);
-          out.before   = mk(open - 0.02);
-          out.after    = mk(close + 0.02);
-          out.center   = mk(W.windup);
+          out.pre = go(null); out.normal = go(1.0); out.just = go(3.0);
           return out;
         }""")
-        check('T02a', '基準-1.0秒ちょうどは成立', bounds['atOpen'] == 500, str(bounds['atOpen']))
-        check('T02b', '基準+1.0秒ちょうどは成立', bounds['atClose'] == 500, str(bounds['atClose']))
-        check('T02c', '窓の直前は不成立', bounds['before'] == 0, str(bounds['before']))
-        check('T02d', '窓の直後は不成立', bounds['after'] == 0, str(bounds['after']))
+        check('A01a', '起動前の工作 → 先回り成功（落胆）・ジャストなし',
+              r['pre']['outcome'] == 'pre' and r['pre']['mood'] == 'dejected' and r['pre']['bonus'] == 0, r['pre'])
+        check('A01b', '受付前の工作 → 通常成功（落胆）・ジャストなし',
+              r['normal']['outcome'] == 'normal' and r['normal']['mood'] == 'dejected' and r['normal']['bonus'] == 0, r['normal'])
+        check('A01c', 'ジャスト中の工作 → 悲嘆・+500を1回',
+              r['just']['outcome'] == 'just' and r['just']['mood'] == 'heartbroken' and r['just']['bonus'] == 500
+              and r['just']['just'] == 1, r['just'])
+        check('A01d', '結末は確定したまま（resolved）', all(r[k]['phase'] == 'resolved' for k in r))
 
-        # 完了時刻で判定：押した瞬間は窓の外でも、完了時に窓内なら成立する
-        late = js(page, """() => {
-          XMAS.setAuto(false); XMAS.beginPlay(0);
-          const G = XMAS.G, ev = G.events[0], t = ev.target;
-          G.player.x = t.x; G.player.y = t.y + 40;        // 射程内へ
-          ev.phase = 'windup'; ev.t = 1.2;                // 押した時点では受付前
-          XMAS.step(1/60);                                 // 候補を更新
-          XMAS.startAction();
-          const s0 = G.score;
-          XMAS.run(1.2, 1/60);                             // 吸着+工作で完了
-          return { gained: G.score - s0, done: t.done, evT: ev.t };
-        }""")
-        check('T02e', '押下時は窓外でも、完了時が窓内なら成立',
-              late['done'] and late['gained'] >= 500, json.dumps(late))
-
-        # ---------------- T03 旧ハート判定との重複 ----------------
-        print('\nT03 ジャスト判定の一本化')
+        # ================================================================ A02
+        print('\nA02 境界（完了時刻で判定・FPSに依存しない）')
         r = js(page, """() => {
-          XMAS.setAuto(false); XMAS.beginPlay(0);
-          const G = XMAS.G, ev = G.events[0], t = ev.target;
-          // 紐付いたカップルを対象のすぐ横に置き、旧判定も同時に成立しうる状態にする
-          const c = ev.couple; c.x = t.x + 10; c.y = t.y + 10; c.next = 0;
-          ev.phase = 'beat'; ev.t = XMAS.CFG.event.windup;
-          const s0 = G.score;
-          XMAS.sabotage(t);
-          const first = G.score - s0 - t.def.score * G.combo;
-          // 同じ対象をもう一度工作しても加点されない
-          t.done = false;
-          const s1 = G.score;
-          XMAS.sabotage(t);
-          return { first, second: G.score - s1, just: G.just, bound: !!c.evt };
+          const at = (x) => {
+            XMAS.beginPlay(0);
+            const G = XMAS.G, ev = G.events[0];
+            XMAS.setEvT(ev, x);
+            XMAS.sabotage(ev.target);
+            return ev.outcome;
+          };
+          return { o199: at(1.99), o200: at(2.0), o400: at(4.0), o401: at(4.01) };
         }""")
-        check('T03a', '+500は1回だけ', r['first'] == 500, str(r['first']))
-        check('T03b', '同じ対象から二重取得しない', r['just'] == 1, 'just=%d' % r['just'])
-        check('T03c', 'イベント紐付きカップルは旧判定を使わない', r['bound'] is True)
-
-        # ---------------- T04 予告外の工作・工作中断 ----------------
-        print('\nT04 予告外の工作と中断')
+        check('A02a', 't=2.0 ちょうどはジャスト（直前1.99は通常）', r['o200'] == 'just' and r['o199'] == 'normal', r)
+        check('A02b', 't=4.0 ちょうどはジャスト（直後4.01は期限切れ）', r['o400'] == 'just' and r['o401'] == 'missed', r)
         r = js(page, """() => {
-          XMAS.setAuto(false); XMAS.beginPlay(0);
-          const G = XMAS.G, ev = G.events[0], t = ev.target;
-          ev.phase = 'windup'; ev.t = 0.5;                 // 受付前
-          const s0 = G.score;
-          XMAS.sabotage(t);
-          const gained = G.score - s0 - t.def.score * G.combo;
-          // 中断：別対象で工作を始めてすぐキャンセル
+          /* 同じ操作を 20fps と 144fps で行い、完了時刻（押下 + 吸着0.22 + 工作0.60）で結果が一致するか */
+          const trial = (dt, pressAt) => {
+            XMAS.beginPlay(0);
+            const G = XMAS.G, ev = G.events[0], t = ev.target;
+            G.player.x = t.x + 60; G.player.y = t.y + 40; G.player.face = Math.atan2(-40, -60);
+            ev.phase = 'windup'; ev.startAt = G.time; ev.t = 0;
+            while (G.time - ev.startAt < pressAt - 1e-9) XMAS.step(Math.min(dt, pressAt - (G.time - ev.startAt)));
+            XMAS.step(1e-4);
+            XMAS.startAction();
+            if (!G.action) return 'no-action';
+            for (let i = 0; i < 400 && !t.done && G.state === 'playing'; i++) XMAS.step(dt);
+            return ev.outcome;
+          };
+          return {
+            in20: trial(1/20, 3.10), in144: trial(1/144, 3.10),     // 完了 ≈ 3.92 → ジャスト
+            late20: trial(1/20, 3.25), late144: trial(1/144, 3.25), // 完了 ≈ 4.07 → 期限切れ
+          };
+        }""")
+        check('A02c', '期限内の完了は 20fps / 144fps どちらもジャスト', r['in20'] == 'just' and r['in144'] == 'just', r)
+        check('A02d', '期限を過ぎた完了は 20fps / 144fps どちらも期限切れ',
+              r['late20'] == 'missed' and r['late144'] == 'missed', r)
+
+        # ================================================================ A03
+        print('\nA03 期限切れの後に同じ灯を消す')
+        r = js(page, """() => {
           XMAS.beginPlay(0);
-          const G2 = XMAS.G, ev2 = G2.events[0], t2 = G2.targets[0];
-          ev2.phase = 'windup'; ev2.t = 1.0;
-          G2.player.x = t2.x; G2.player.y = t2.y + 40;
+          const G = XMAS.G, ev = G.events[0], t = ev.target;
+          XMAS.setEvT(ev, 3.9);
+          XMAS.run(0.3, 1/60);
+          const missed = { outcome: ev.outcome, mood: ev.couple.mood };
+          const s0 = G.score, m0 = G.mood;
+          XMAS.sabotage(t);
+          const lines = G.lines.map(l => l.text);
+          return { missed, after: { outcome: ev.outcome, mood: ev.couple.mood },
+                   gained: G.score - s0, base: t.def.score * G.combo, moodDrop: m0 - G.mood, tMood: t.mood,
+                   just: G.just, lines };
+        }""")
+        check('A03a', '期限を過ぎると親密化で確定', r['missed']['outcome'] == 'missed' and r['missed']['mood'] == 'lovey', r['missed'])
+        check('A03b', '期限後の消灯でも親密なまま（巻き戻さない）', r['after']['outcome'] == 'missed' and r['after']['mood'] == 'lovey')
+        check('A03c', '期限後の消灯は通常点・通常のムード減少だけ（+500なし）',
+              r['gained'] == r['base'] and r['moodDrop'] == r['tMood'] and r['just'] == 0, r)
+        check('A03d', '主人公の一言は「……手遅れか」', '「……手遅れか」' in r['lines'], r['lines'])
+        r = js(page, """() => {
+          XMAS.beginPlay(0);                      // STAGE1 はデートのカップルとオーラのカップルが同じ
+          const G = XMAS.G, ev = G.events[0], a = G.auras[0];
+          XMAS.setEvT(ev, 3.9); XMAS.run(0.3, 1/60);
+          XMAS.sabotage(a.source);
+          return { aura: a.on, mood: ev.couple.mood };
+        }""")
+        check('A03e', '親密化したカップルでも電源を落とせばオーラは消える（親密ポーズは維持）',
+              r['aura'] is False and r['mood'] == 'lovey', r)
+
+        # ================================================================ A04
+        print('\nA04 中断・再接近・リトライ')
+        r = js(page, """() => {
+          XMAS.beginPlay(0);
+          const G = XMAS.G, ev = G.events[0], t = ev.target;
+          G.player.x = t.x + 60; G.player.y = t.y + 40;
+          XMAS.setEvT(ev, 1.0);
           XMAS.step(1/60); XMAS.startAction();
           XMAS.run(0.3, 1/60);
-          const evBefore = ev2.t;
-          XMAS.input.mx = 1; XMAS.input.my = 0;            // 移動入力でキャンセル
-          const s2 = G2.score;
-          XMAS.run(0.4, 1/60);
-          XMAS.input.mx = 0;
-          return { gained, scoreAfterCancel: G2.score - s2, done: t2.done,
-                   evAdvanced: ev2.t > evBefore };
+          const tBefore = ev.t;
+          XMAS.input.keys.l = 1; XMAS.step(1/60); XMAS.input.keys.l = 0;   // 新しい移動入力で中断
+          const cancelled = !G.action;
+          XMAS.run(0.2, 1/60);
+          const s0 = G.score;
+          XMAS.sabotage(t); XMAS.sabotage(t);
+          return { cancelled, advanced: ev.t > tBefore, doneOnce: G.doneCount, justCount: G.just, score: G.score - s0 };
         }""")
-        check('T04a', '受付外の工作は通常得点のみ（ジャストなし）', r['gained'] == 0, str(r['gained']))
-        check('T04b', '中断では加点しない', r['scoreAfterCancel'] == 0 and not r['done'], json.dumps(r))
-        check('T04c', '中断でイベント時計を巻き戻さない', r['evAdvanced'] is True)
-
-        # ---------------- T05 コンボ待機猶予 ----------------
-        print('\nT05 コンボ待機猶予')
+        check('A04a', '中断ではイベントの時計を巻き戻さない', r['cancelled'] and r['advanced'], r)
+        check('A04b', '同じ対象を2回呼んでも確定は1回', r['doneOnce'] == 1, r)
         r = js(page, """() => {
-          XMAS.setAuto(false); XMAS.beginPlay(0);
-          const G = XMAS.G, ev = G.events[0], t = ev.target;
-          G.player.x = t.x; G.player.y = t.y + 30;
-          G.combo = 2; G.comboT = 1.0;
-          ev.phase = 'windup'; ev.t = 0.1;
-          XMAS.step(1/60);
-          const c0 = G.comboT;
-          XMAS.run(1.0, 1/60);                  // 猶予が効いてコンボ時計が止まる
-          const held = G.comboT;
-          XMAS.run(1.0, 1/60);                  // 1.2秒を超えたら通常消費へ戻る
-          const after = G.comboT;
-          const used = t.graceUsed;
-          // 離脱して戻っても猶予は回復しない
-          G.player.x = t.x + 500;
-          XMAS.run(0.3, 1/60);
-          G.player.x = t.x; G.combo = 2; G.comboT = 1.0;
-          XMAS.run(0.5, 1/60);
-          return { c0, held, after, used, usedAfter: t.graceUsed, comboT: G.comboT };
-        }""")
-        check('T05a', '条件中はコンボ時計が止まる', abs(r['held'] - r['c0']) < 0.05,
-              'c0=%.2f held=%.2f' % (r['c0'], r['held']))
-        check('T05b', '累積1.2秒で打ち切り', abs(r['used'] - 1.2) < 0.03, 'used=%.3f' % r['used'])
-        check('T05c', '再接近しても猶予は回復しない', r['usedAfter'] <= 1.2 + 1e-6 and r['comboT'] < 1.0,
-              'usedAfter=%.3f comboT=%.2f' % (r['usedAfter'], r['comboT']))
-        r2 = js(page, """() => {
-          XMAS.setAuto(false); XMAS.beginPlay(0);
-          const G = XMAS.G, ev = G.events[0], t = ev.target;
-          G.player.x = t.x; G.player.y = t.y + 30;
-          G.combo = 0; G.comboT = 0;                    // 既に切れたコンボ
-          ev.phase = 'windup'; ev.t = 0.1;
-          XMAS.run(0.5, 1/60);
-          return { combo: G.combo, used: t.graceUsed };
-        }""")
-        check('T05d', '切れたコンボは復活しない・猶予も使わない',
-              r2['combo'] == 0 and r2['used'] == 0, json.dumps(r2))
-
-        # ---------------- T06 一時停止 ----------------
-        print('\nT06 一時停止')
-        r = js(page, """() => {
-          XMAS.setAuto(false); XMAS.beginPlay(0);
+          XMAS.beginPlay(0);
           const G = XMAS.G, ev = G.events[0];
-          ev.phase = 'windup'; ev.t = 0.5;
-          const snap = { left: G.left, evT: ev.t, detect: G.detect, time: G.time };
-          G.state = 'pause';
-          for (let i=0;i<60;i++) XMAS.step(1/60);   // pause中は update が走らない
-          return { moved: (G.left !== snap.left) || (ev.t !== snap.evT) || (G.time !== snap.time) };
+          XMAS.setEvT(ev, 3.0); XMAS.sabotage(ev.target);
+          const pendingBefore = G.lines.length;
+          XMAS.beginPlay(0);                       // リトライ
+          const G2 = XMAS.G;
+          return { pendingBefore, lines: G2.lines.length, just: G2.just, phase: G2.events[0].phase,
+                   mood: G2.couples[0].mood, aura: G2.auras[0].on, card: document.getElementById('reactCard').classList.contains('on') };
         }""")
-        check('T06', '一時停止で制限時間・イベント・発見が止まる', r['moved'] is False)
+        check('A04c', 'リトライで前のプレイの一言・反応・結末を持ち越さない',
+              r['pendingBefore'] > 0 and r['lines'] == 0 and r['just'] == 0 and r['phase'] == 'idle'
+              and r['mood'] is None and r['aura'] is True and r['card'] is False, r)
 
-        # ---------------- T07/T08 警備員の調査 ----------------
-        print('\nT07/T08 警備員の調査行動')
+        # ================================================================ A05
+        print('\nA05 オーラの電源対応')
         r = js(page, """() => {
-          XMAS.setAuto(false); XMAS.beginPlay(1);       // STAGE2
-          const G = XMAS.G;
-          const g = G.guards.find(x => x.mode === 'patrol');
-          const t = G.targets.reduce((a,b) =>
-            Math.hypot(b.x-g.x,b.y-g.y) < Math.hypot(a.x-g.x,a.y-g.y) ? b : a);
-          const d = Math.hypot(t.x-g.x, t.y-g.y);
-          const home = { leg: g.leg, x: g.x, y: g.y };
-          XMAS.notifyGuards(t);
-          const reacted = g.inv;
-          const others = G.guards.filter(x => x !== g && x.inv !== 'patrol').length;
-          let reachedCheck = false, hitObstacle = false;
-          for (let i=0;i<60*12;i++) {
-            XMAS.step(1/60);
-            if (g.inv === 'check') reachedCheck = true;
-            for (const o of G.obstacles) {
-              if (g.x > o.x && g.x < o.x+o.w && g.y > o.y && g.y < o.y+o.h) hitObstacle = true;
-            }
-            if (g.inv === 'patrol' && reachedCheck) break;
-          }
-          return { d, reacted, others, reachedCheck, hitObstacle,
-                   back: g.inv, cool: g.invCool > 0, leg: g.leg };
-        }""")
-        check('T07a', '範囲内の1人だけが反応', r['reacted'] == 'react' and r['others'] == 0,
-              'inv=%s others=%d' % (r['reacted'], r['others']))
-        check('T07b', '通知範囲300px以内', r['d'] <= 300, 'd=%.0f' % r['d'])
-        check('T08a', '現地確認まで到達し、巡回へ復帰する',
-              r['reachedCheck'] and r['back'] == 'patrol', json.dumps(r))
-        check('T08b', '什器・壁を通り抜けない', r['hitObstacle'] is False)
-        check('T08c', '復帰後にクールダウンが入る', r['cool'] is True)
-
-        r = js(page, """() => {
-          XMAS.setAuto(false); XMAS.beginPlay(1);
-          const G = XMAS.G;
-          const g = G.guards.find(x => x.mode === 'patrol');
-          const t = G.targets.reduce((a,b) =>
-            Math.hypot(b.x-g.x,b.y-g.y) < Math.hypot(a.x-g.x,a.y-g.y) ? b : a);
-          g.hot = 1;                       // プレイヤーを直視中
-          XMAS.notifyGuards(t);
-          const whileSeen = g.inv;
-          g.hot = 0; g.inv = 'check';      // 調査中への再通知
-          XMAS.notifyGuards(t);
-          const whileBusy = g.inv;
-          // ステージ1は調査を導入しない
           XMAS.beginPlay(0);
-          const G1 = XMAS.G;
-          const t1 = G1.targets[0];
-          XMAS.notifyGuards(t1);
-          const s1 = G1.guards.every(x => x.inv === 'patrol');
-          return { whileSeen, whileBusy, s1 };
+          const G = XMAS.G, a = G.auras[0];
+          const other = G.targets.find(t => t !== a.source && !t.evt);
+          XMAS.sabotage(other);
+          const afterOther = a.on;
+          /* 電源へ工作を始めて中断 */
+          const s = a.source;
+          const an = XMAS.anchorOf(s, s.x - 60, s.y + 60);
+          G.player.x = an.x - 10; G.player.y = an.y + 10;
+          XMAS.step(1/60); XMAS.startAction(); XMAS.run(0.15, 1/60);
+          const started = !!G.action;
+          XMAS.input.keys.r = 1; XMAS.step(1/60); XMAS.input.keys.r = 0;
+          const afterCancel = a.on;
+          /* 完了した同じ更新で通れる */
+          G.player.x = a.x; G.player.y = a.y + a.r + 40;
+          XMAS.sabotage(s);
+          const offNow = a.on;
+          XMAS.movePlayer(0, -(a.r + 40) * 2);
+          return { afterOther, started, afterCancel, offNow, crossed: G.player.y < a.y - a.r };
         }""")
-        check('T07c', '直視中の警備員は誘導されない', r['whileSeen'] == 'patrol', r['whileSeen'])
-        check('T07d', '調査中への再通知は無視（待ち行列なし）', r['whileBusy'] == 'check')
-        check('T07e', 'ステージ1では調査行動が起きない', r['s1'] is True)
+        check('A05a', '別の照明では消えない', r['afterOther'] is True)
+        check('A05b', '電源への工作を中断しても消えない', r['started'] and r['afterCancel'] is True, r)
+        check('A05c', '電源の工作完了と同じ更新で衝突が消え、そのまま通り抜けられる',
+              r['offNow'] is False and r['crossed'] is True, r)
 
-        # ---------------- T10 最後のジャストでクリア ----------------
-        print('\nT10 最後のジャストでクリア')
+        # ================================================================ A06
+        print('\nA06 見える輪と当たり判定')
         r = js(page, """() => {
-          XMAS.setAuto(false); XMAS.beginPlay(0);
+          const C = XMAS.CFG.aura;
+          XMAS.beginPlay(0);
+          const G = XMAS.G, a = G.auras[0];
+          /* 描画サイズ = 512×R/176 のとき、画像上の芯（176px）が画面上で R になる */
+          const drawnCore = (C.ringImg * a.r / C.ringCore) * (C.ringCore / C.ringImg);
+          /* 低FPS相当：1回で 400px 動かしても貫通しない */
+          const rr = a.r + C.playerR;
+          G.player.x = a.x; G.player.y = a.y + rr + 60;
+          XMAS.movePlayer(0, -400);
+          const d1 = Math.hypot(G.player.x - a.x, G.player.y - a.y);
+          const below = G.player.y > a.y;
+          /* 斜めに押し込むと接線方向へ滑る */
+          G.player.x = a.x + 10; G.player.y = a.y + rr + 2;
+          const x0 = G.player.x;
+          for (let i = 0; i < 30; i++) XMAS.movePlayer(0.3, -3);
+          const d2 = Math.hypot(G.player.x - a.x, G.player.y - a.y);
+          return { drawnCore, r: a.r, d1, below, rr, slid: G.player.x - x0, d2 };
+        }""")
+        check('A06a', '輪の芯の描画半径 = 衝突半径', abs(r['drawnCore'] - r['r']) < 1e-9, r)
+        check('A06b', '1回の大きな移動でも輪を貫通しない', r['d1'] >= r['rr'] - 0.01 and r['below'], r)
+        check('A06c', '押し込むと円周に沿って滑る（中へは入らない）', r['slid'] > 5 and r['d2'] >= r['rr'] - 0.01, r)
+
+        # ================================================================ A07
+        print('\nA07 吸着と配置（外から電源に届く・行き詰まりがない）')
+        r = js(page, """() => {
+          const C = XMAS.CFG.aura, out = [];
+          for (let i = 0; i < 5; i++) {
+            XMAS.beginPlay(i);
+            const G = XMAS.G, rr = (a) => a.r + C.playerR;
+            const inside = (x, y) => G.auras.some(a => a.on && Math.hypot(x - a.x, y - a.y) < rr(a));
+            /* どの対象にも、全オーラが点いた状態で輪の外に工作位置が少なくとも1方向ある */
+            let stuck = [];
+            G.targets.forEach((t, k) => {
+              let ok = false;
+              for (let j = 0; j < 36 && !ok; j++) {
+                const ang = j / 36 * Math.PI * 2;
+                const an = { x: t.x + Math.cos(ang) * 42, y: t.y + Math.sin(ang) * 42 };
+                if (!inside(an.x, an.y)) ok = true;
+              }
+              if (!ok) stuck.push(k);
+            });
+            /* 電源が別のオーラの内側にない（循環依存なし）・スタート地点が輪の外 */
+            const srcInside = G.auras.filter(a => G.auras.some(b => b !== a && Math.hypot(a.source.x - b.x, a.source.y - b.y) < rr(b))).length;
+            out.push({ stage: i + 1, auras: G.auras.length, stuck, srcInside, startOut: !inside(G.player.x, G.player.y),
+                       minSrcGap: Math.min(...G.auras.map(a => Math.hypot(a.source.x - a.x, a.source.y - a.y) - rr(a) - 42)) });
+          }
+          return out;
+        }""")
+        check('A07a', '全ステージ：すべての対象に輪の外の工作位置がある', all(len(x['stuck']) == 0 for x in r),
+              [(x['stage'], x['stuck']) for x in r])
+        check('A07b', '全ステージ：電源は他のオーラの内側にない（循環依存なし）', all(x['srcInside'] == 0 for x in r))
+        check('A07c', '全ステージ：開始地点が輪の外', all(x['startOut'] for x in r))
+        check('A07d', '全ステージ：電源の工作位置は、どの方向から来ても自分の輪の外', all(x['minSrcGap'] > 0 for x in r),
+              [round(x['minSrcGap'], 1) for x in r])
+        r = js(page, """() => {
+          XMAS.beginPlay(0);
+          const G = XMAS.G, a = G.auras[0], t = G.targets[0];
+          /* 主人公と対象の間にオーラを置く：ロックしない・案内を出す */
+          G.player.x = t.x; G.player.y = t.y - 120; G.player.face = Math.PI / 2;
+          a.x = t.x; a.y = t.y - 60 + 2;
+          const blocked = XMAS.pickTarget();
+          const hint = XMAS.G.blocked === t;
+          a.on = false;
+          const freed = XMAS.pickTarget();
+          return { blocked: blocked ? blocked.i : null, hint, freed: freed ? freed.i : null };
+        }""")
+        check('A07e', 'オーラ越しの対象はロックしない（吸着で貫通しない）→ 消えればロックできる',
+              r['blocked'] is None and r['hint'] and r['freed'] == 0, r)
+
+        # ================================================================ A08
+        print('\nA08 最後の工作でクリア')
+        fresh(page)
+        r = js(page, """() => {
+          XMAS.beginPlay(0);
           const G = XMAS.G, ev = G.events[0], t = ev.target;
-          G.mood = t.mood;                       // これでちょうど0になる
-          ev.phase = 'beat'; ev.t = XMAS.CFG.event.windup;
-          const untouched = G.targets.filter(x => x !== t).map(x => x.done);
+          G.mood = t.mood; G.left = 0.05;
+          XMAS.setEvT(ev, 3.0);
           XMAS.sabotage(t);
-          const pending = G.pendingWin, stateMid = G.state;
-          XMAS.step(1/60);                       // update末尾で確定 …のはずだが
-          return { pending, stateMid, mood: G.mood, untouchedStillFalse: untouched.every(v => !v) };
-        }""")
-        check('T10a', '未工作の照明が勝手に変わらない', r['untouchedStillFalse'] is True)
-        check('T10b', 'ムードは0でクランプ', r['mood'] == 0, str(r['mood']))
-
-        clear_records(page)
-        r = js(page, """() => {
-          XMAS.setAuto(false); XMAS.beginPlay(0);
-          XMAS.save.best2 = {};
-          const G = XMAS.G, ev = G.events[0], t = ev.target;
-          G.player.x = t.x; G.player.y = t.y + 30;
-          G.mood = t.mood;
-          ev.phase = 'beat'; ev.t = XMAS.CFG.event.windup - 0.3;
-          XMAS.step(1/60); XMAS.startAction();
-          XMAS.run(1.5, 1/60);                   // 工作完了 → update末尾で勝利確定
+          XMAS.step(1/60);
           const st1 = G.state, res = G.result;
-          const saves = [];
-          XMAS.run(2.2, 1/60);                   // finishing → result
-          return { st1, st2: G.state, just: G.just, score: res ? res.total : 0,
-                   isFirst: res ? res.isFirst : null,
-                   bestScore: (XMAS.bests()[1] || {}).score };
+          XMAS.run(2.2, 1/60);
+          return { st1, st2: G.state, just: G.just, mood: ev.couple.mood, total: res.total,
+                   best: XMAS.bests()[1].score, left: G.left };
         }""")
-        check('T10c', 'クリアは finishing → result の順に進む',
-              r['st1'] == 'finishing' and r['st2'] == 'result', '%s -> %s' % (r['st1'], r['st2']))
-        check('T10d', '最後のジャストを含めて1回保存', r['bestScore'] == r['score'] and r['just'] == 1,
-              'score=%s best=%s just=%s' % (r['score'], r['bestScore'], r['just']))
+        check('A08a', '最後のジャストも加点・反応が入る', r['just'] == 1 and r['mood'] == 'heartbroken', r)
+        check('A08b', '結果の保存は1回（最終点と一致）', r['best'] == r['total'], r)
+        check('A08c', '演出中に時間切れへ反転しない', r['st1'] == 'finishing' and r['st2'] == 'result', r)
 
-        # ---------------- T11 スキップ ----------------
-        print('\nT11 クリア演出のスキップ')
+        # ================================================================ A09
+        print('\nA09 発見／時間切れの敗北')
         r = js(page, """() => {
-          XMAS.setAuto(false); XMAS.beginPlay(0);
-          const G = XMAS.G;
-          G.mood = G.targets[0].mood;
-          XMAS.sabotage(G.targets[0]);
-          XMAS.step(1/60);
-          const early = XMAS.skipFinish();        // 0.25秒前は不可
-          XMAS.run(0.3, 1/60);
-          const late = XMAS.skipFinish();
-          return { early, late, state: G.state };
+          const out = {};
+          for (const kind of ['time', 'seen']) {
+            XMAS.beginPlay(1);
+            const G = XMAS.G;
+            if (kind === 'time') G.left = 0.005;
+            else { G.detect = 99.99; G.guards.forEach(g => { g.range = 9999; g.fov = 3.2; g.x = G.player.x; g.y = G.player.y - 20; }); }
+            XMAS.step(1/60);
+            const s1 = G.state;
+            const early = XMAS.skipFinish();
+            XMAS.run(0.3, 1/60);
+            const late = XMAS.skipFinish();
+            out[kind] = { s1, early, late, s2: G.state, reason: document.getElementById('failReason').textContent,
+                          sub: document.getElementById('failSub').textContent,
+                          art: document.getElementById('failArt').getAttribute('src') };
+          }
+          XMAS.beginPlay(1);
+          out.retry = XMAS.G.state;
+          return out;
         }""")
-        check('T11a', '0.25秒より前はスキップしない', r['early'] is False)
-        check('T11b', '0.25秒以降はスキップできる', r['late'] is True and r['state'] == 'result',
-              json.dumps(r))
+        check('A09a', '敗北でゲーム時計が止まり、悔し顔の演出へ', r['time']['s1'] == 'failing' and r['seen']['s1'] == 'failing', r)
+        check('A09b', '0.25秒前はスキップしない／以降は失敗画面へ', not r['time']['early'] and r['time']['late'] and r['time']['s2'] == 'fail')
+        check('A09c', '失敗画面は親密な結果絵と理由', 'result_mission_failure' in (r['time']['art'] or '')
+              and r['time']['reason'] == '時間切れ' and r['time']['sub'] == '聖夜は、まだ終わらない'
+              and r['seen']['reason'] == '発見された' and r['seen']['sub'] == '「……設備点検です」', r)
+        check('A09d', 'すぐ再挑戦できる', r['retry'] == 'playing')
 
-        # ---------------- T12 同一フレームの勝敗 ----------------
-        print('\nT12 同一フレームで勝敗が同時成立')
-        clear_records(page)
+        # ================================================================ A10
+        print('\nA10 全ステージ制覇')
+        fresh(page, {'unlocked': 5, 'best3': {'1': {'score': 1, 'time': 9, 'rank': 'C'}, '2': {'score': 1, 'time': 9, 'rank': 'C'},
+                                              '3': {'score': 1, 'time': 9, 'rank': 'C'}, '4': {'score': 1, 'time': 9, 'rank': 'C'}}})
         r = js(page, """() => {
-          XMAS.setAuto(false); XMAS.beginPlay(0);
-          XMAS.save.best2 = {};
-          const G = XMAS.G;
-          const t = G.targets[0];
-          G.mood = t.mood;
-          XMAS.sabotage(t);                 // 勝利は保留になる
-          G.detect = 99.9;                  // 同じフレームで発見も成立させる
-          G.guards.forEach(g => { g.range = 9999; g.fov = 3.2; g.x = G.player.x; g.y = G.player.y; });
-          XMAS.step(1/60);
-          return { state: G.state, pending: G.pendingWin, result: !!G.result,
-                   best: Object.keys(XMAS.bests()).length };
-        }""")
-        check('T12', '失敗が優先され、結果は二重保存されない',
-              r['state'] == 'fail' and r['pending'] is False and r['best'] == 0, json.dumps(r))
-
-        # ---------------- T13 保存互換性 ----------------
-        print('\nT13 保存互換性')
-        r = page.evaluate("""() => {
-          // 旧版セーブ（best のみ・全ステージ解放済み）を置いて読み直す
-          const old = { unlocked: 5, bgm: false, lefty: true,
-            best: { 1:{score:9999,time:50,rank:'S'}, 2:{score:9,time:9,rank:'C'},
-                    3:{score:9,time:9,rank:'C'}, 4:{score:9,time:9,rank:'C'}, 5:{score:9,time:9,rank:'C'} } };
-          localStorage.setItem(XMAS.SKEY, JSON.stringify(old));
-          return true;
-        }""")
-        page.reload(); page.wait_for_function("() => !!window.XMAS")
-        r = js(page, """() => ({
-          unlocked: XMAS.save.unlocked, bgm: XMAS.save.bgm, lefty: XMAS.save.lefty,
-          oldBest: XMAS.save.best[1].score, newBest: Object.keys(XMAS.save.best2).length,
-          allClear2: XMAS.save.allClear2
-        })""")
-        check('T13a', '旧解放と設定を保持', r['unlocked'] == 5 and r['bgm'] is False and r['lefty'] is True,
-              json.dumps(r))
-        check('T13b', '旧版の点数を保持し、新版と混ぜない',
-              r['oldBest'] == 9999 and r['newBest'] == 0, json.dumps(r))
-        check('T13c', '旧版で全クリア済みなら初全クリア演出を再発生させない', r['allClear2'] is True)
-
-        # 新版でクリアしても旧記録を壊さない／初記録は「更新」と表示しない
-        r = js(page, """() => {
-          XMAS.setAuto(false); XMAS.beginPlay(0);
+          const before = XMAS.save.allClearEndingUnlocked;
+          XMAS.beginPlay(4);
           const G = XMAS.G; G.mood = G.targets[0].mood;
           XMAS.sabotage(G.targets[0]); XMAS.step(1/60);
-          const res = G.result;
-          return { isFirst: res.isFirst, isBest: res.isBest,
-                   old: XMAS.save.best[1].score, neo: XMAS.save.best2[1].score,
-                   ver: XMAS.save.best2[1].v };
+          return { before, after: XMAS.save.allClearEndingUnlocked, state: G.state, ending: !!G.ending,
+                   firstAll: G.result.firstAll };
         }""")
-        check('T13d', '旧版記録を上書きしない', r['old'] == 9999, str(r['old']))
-        check('T13e', '新版の初記録は「自己ベスト更新」にしない',
-              r['isFirst'] is True and r['isBest'] is False, json.dumps(r))
-        check('T13f', '記録にルール版を持つ', r['ver'] == 2, str(r['ver']))
+        check('A10a', '最終ステージ解放だけでは解放されない', r['before'] is False, r)
+        check('A10b', '5ステージのクリアがそろった勝利で破局エンドへ',
+              r['after'] is True and r['state'] == 'ending' and r['ending'] and r['firstAll'], r)
 
-        # JSON破損でも起動できる
-        page.evaluate("() => localStorage.setItem(XMAS.SKEY, '{壊れたJSON')")
-        page.reload(); page.wait_for_function("() => !!window.XMAS")
-        r = js(page, "() => ({ unlocked: XMAS.save.unlocked, ok: XMAS.G.state === 'title' })")
-        check('T13g', 'JSON破損でもゲームを開始できる', r['ok'] and r['unlocked'] >= 1, json.dumps(r))
-
-        # ---------------- T16 全5ステージのイベント ----------------
-        print('\nT16 全5ステージ')
+        # ================================================================ A11
+        print('\nA11 エンドのスキップ・再読込・再生')
         r = js(page, """() => {
-          const out = [];
-          for (let i=0;i<5;i++) {
-            XMAS.setAuto(false); XMAS.beginPlay(i);
-            const G = XMAS.G;
-            const ev = G.events[0];
-            out.push({ id: G.stage.id, events: G.events.length,
-                       type: ev ? ev.def.type : null,
-                       target: ev ? ev.target.type : null,
-                       payoff: ev ? ev.def.payoff : null,
-                       bound: ev ? (ev.target.evt === ev && ev.couple.evt === ev) : false,
-                       near: ev ? Math.round(Math.hypot(ev.couple.x-ev.target.x, ev.couple.y-ev.target.y)) : -1,
-                       moodTotal: G.targets.reduce((a,t)=>a+t.mood,0) });
-          }
+          const early = XMAS.skipEnding();
+          XMAS.run(0.3, 1/60);
+          const late = XMAS.skipEnding();
+          return { early, late, state: XMAS.G.state, head: document.getElementById('resultHead').textContent,
+                   sub: document.getElementById('resultSub').textContent,
+                   art: document.getElementById('resultArt').getAttribute('src'), seen: XMAS.save.allClearEndingSeen };
+        }""")
+        check('A11a', '0.25秒後から新しい入力でスキップ → 全任務達成の結果へ',
+              not r['early'] and r['late'] and r['state'] == 'result' and r['head'] == '全任務達成'
+              and r['sub'] == '聖夜、完全終了。' and 'ending_all_clear' in (r['art'] or ''), r)
+        page.reload(); page.wait_for_function("() => !!window.XMAS"); page.evaluate("() => XMAS.setAuto(false)")
+        r = js(page, """() => {
+          const u = XMAS.save.allClearEndingUnlocked, s = XMAS.save.allClearEndingSeen;
+          const slot = !!document.querySelector('.slot.ending');
+          const b0 = JSON.stringify(XMAS.save.best3);
+          XMAS.startEnding(true, 'ovSelect'); XMAS.run(6.0, 1/60); XMAS.skipEnding();
+          const b1 = JSON.stringify(XMAS.save.best3);
+          const back = document.getElementById('ovSelect').classList.contains('on');
+          /* 2回目の全制覇（既に解放済み）は通常の成功演出 */
+          XMAS.beginPlay(4);
+          const G = XMAS.G; G.mood = G.targets[0].mood;
+          XMAS.sabotage(G.targets[0]); XMAS.step(1/60);
+          return { u, s, slot, same: b0 === b1, back, second: G.state };
+        }""")
+        check('A11b', '再読込後も解放が残り、メニューから再生できる', r['u'] and r['s'] and r['slot'] and r['back'], r)
+        check('A11c', '再生で記録・得点は増えない', r['same'])
+        check('A11d', '2回目以降の全制覇では強制再生しない', r['second'] == 'finishing', r)
+
+        # ================================================================ A12
+        print('\nA12 旧セーブの移行')
+        old = {'unlocked': 5, 'lefty': False, 'bgm': False, 'se': True, 'lite': True,
+               'best': {'1': {'score': 9999, 'time': 50, 'rank': 'S'}},
+               'best2': {str(i): {'score': 100 * i, 'time': 60, 'rank': 'B', 'v': 2} for i in range(1, 6)}}
+        fresh(page, old)
+        r = js(page, """() => ({ c: XMAS.save.controls, unlocked: XMAS.save.unlocked, bgm: XMAS.save.bgm, lite: XMAS.save.lite,
+                                best1: XMAS.save.best[1].score, best2: Object.keys(XMAS.save.best2).length,
+                                best3: Object.keys(XMAS.save.best3).length,
+                                end: XMAS.save.allClearEndingUnlocked, seen: XMAS.save.allClearEndingSeen,
+                                state: XMAS.G.state, ending: !!XMAS.G.ending })""")
+        check('A12a', '解放・設定・旧記録（版1/版2）を保持し、版3は空', r['unlocked'] == 5 and r['bgm'] is False and r['lite'] is True
+              and r['best1'] == 9999 and r['best2'] == 5 and r['best3'] == 0, r)
+        check('A12b', '旧「左利きOFF」＝左側スティック → 左下へ移行', r['c']['preset'] == 'bl' and r['c']['mode'] == 'stick', r['c'])
+        check('A12c', '旧版の全クリア証跡で破局エンドを解放（起動時に強制再生しない）',
+              r['end'] is True and r['seen'] is False and r['state'] == 'title' and not r['ending'], r)
+        fresh(page, {'unlocked': 3, 'lefty': True})
+        r = js(page, "() => ({ c: XMAS.save.controls, end: XMAS.save.allClearEndingUnlocked })")
+        check('A12d', '旧「左利きON」＝右側スティック → 右下へ移行／証跡なしは解放しない',
+              r['c']['preset'] == 'br' and r['end'] is False, r)
+        fresh(page, {'unlocked': 5, 'lefty': True, 'controls': {'v': 1, 'mode': 'drag', 'preset': 'bc', 'stick': None, 'btn': None}})
+        r = js(page, "() => XMAS.save.controls")
+        check('A12e', '移行済み・変更済みの配置は上書きしない', r['mode'] == 'drag' and r['preset'] == 'bc', r)
+        fresh(page)
+        r = js(page, "() => XMAS.save.controls")
+        check('A12f', '新規プレイヤーは右下から始まる', r['preset'] == 'br' and r['mode'] == 'stick', r)
+
+        # ================================================================ A13
+        print('\nA13 右下／中央下／左下と自由配置')
+        bad = []
+        for vw, vh in [(360, 640), (400, 800), (320, 568), (430, 932), (800, 600)]:
+            page.set_viewport_size({'width': vw, 'height': vh})
+            r = js(page, """() => {
+              const C = XMAS.CFG.controls, out = [];
+              for (const pr of ['br', 'bc', 'bl']) {
+                XMAS.setPreset(pr);
+                const p = XMAS.ctl.pos, s = XMAS.ctl.safe;
+                const d = Math.hypot(p.btn.x - p.stick.x, p.btn.y - p.stick.y);
+                const inside = (pt, r) => pt.x - r >= s.x0 && pt.x + r <= s.x1 && pt.y - r >= s.y0 && pt.y + r <= s.y1;
+                out.push({ pr, gap: d - (C.acquireR + C.btnR), inS: inside(p.stick, C.acquireR), inB: inside(p.btn, C.btnR) });
+              }
+              return out;
+            }""")
+            for x in r:
+                if x['gap'] < 8 - 1e-6 or not x['inS'] or not x['inB']:
+                    bad.append((vw, vh, x))
+        check('A13a', '5種類の画面サイズ×3プリセットで、画面内・HUD外・8px以上の隙間', not bad, bad)
+        page.set_viewport_size({'width': 400, 'height': 800})
+        r = js(page, """() => {
+          XMAS.setPreset('br');
+          XMAS.openLayoutEditor();
+          const e = XMAS.editor, C = XMAS.CFG.controls;
+          /* 工作ボタンをスティックの真上に重ねようとしても押しのけられる */
+          e.pos.btn.x = e.pos.stick.x; e.pos.btn.y = e.pos.stick.y;
+          XMAS.fitLayout(e.pos, XMAS.ctl.safe, 'btn');
+          const sep = Math.hypot(e.pos.btn.x - e.pos.stick.x, e.pos.btn.y - e.pos.stick.y) >= C.acquireR + C.btnR + C.gap - 1e-6;
+          /* キャンセルでは保存しない */
+          document.getElementById('btnLayoutCancel').click();
+          const afterCancel = XMAS.save.controls.preset;
+          /* 保存すると自由配置として正規化座標で残る */
+          XMAS.openLayoutEditor();
+          e.pos.stick.x -= 40; e.pos.stick.y -= 60;
+          XMAS.fitLayout(e.pos, XMAS.ctl.safe, 'stick');
+          document.getElementById('btnLayoutSave').click();
+          const saved = JSON.parse(localStorage.getItem('xmas-funsai-v1')).controls;
+          /* 初期位置に戻す */
+          XMAS.openLayoutEditor();
+          document.getElementById('btnLayoutReset').click();
+          const reset = XMAS.presetPos('br', XMAS.ctl.safe);
+          const resetOk = Math.abs(e.pos.stick.x - reset.stick.x) < 1 && Math.abs(e.pos.btn.x - reset.btn.x) < 1;
+          document.getElementById('btnLayoutCancel').click();
+          return { sep, afterCancel, saved, resetOk, bgm: XMAS.save.bgm };
+        }""")
+        check('A13b', '編集中に重ねようとしても隙間を保つ', r['sep'])
+        check('A13c', 'キャンセルでは保存しない／保存で自由配置（0〜1の座標）', r['afterCancel'] == 'br'
+              and r['saved']['preset'] == 'custom' and all(0 <= v <= 1 for v in r['saved']['stick'] + r['saved']['btn']), r)
+        check('A13d', '「初期位置に戻す」は右下の配置', r['resetOk'])
+        page.set_viewport_size({'width': 340, 'height': 600})
+        r = js(page, """() => {
+          const C = XMAS.CFG.controls, p = XMAS.ctl.pos, s = XMAS.ctl.safe;
+          return { gap: Math.hypot(p.btn.x - p.stick.x, p.btn.y - p.stick.y) - (C.acquireR + C.btnR),
+                   inside: p.stick.x + C.acquireR <= s.x1 && p.btn.y + C.btnR <= s.y1 };
+        }""")
+        check('A13e', '画面サイズが変わっても自由配置を再クランプして重ならない', r['gap'] >= 8 - 1e-6 and r['inside'], r)
+        page.set_viewport_size({'width': 400, 'height': 800})
+
+        # ================================================================ A14
+        print('\nA14 指2本・領域外のup・cancel')
+        fresh(page)
+        r = js(page, """() => {
+          XMAS.beginPlay(0);
+          const G = XMAS.G, fr = document.getElementById('frame').getBoundingClientRect();
+          const P = XMAS.ctl.pos;
+          const fire = (type, id, x, y, el) => (el || document.elementFromPoint(fr.left + x, fr.top + y) || document.getElementById('frame'))
+            .dispatchEvent(new PointerEvent(type, { pointerId: id, clientX: fr.left + x, clientY: fr.top + y, bubbles: true, pointerType: 'touch', isPrimary: id === 1 }));
+          const frame = document.getElementById('frame');
+          /* 画面の空き地（右半分）をタップしても何も起きない（暗黙の工作領域は廃止） */
+          const t0 = G.targets[0];
+          G.player.x = t0.x + 50; G.player.y = t0.y + 20; XMAS.step(1/60);
+          fire('pointerdown', 7, fr.width * 0.75, fr.height * 0.45); fire('pointerup', 7, fr.width * 0.75, fr.height * 0.45);
+          const noImplicit = !G.action;
+          /* 指1でスティック、指2で工作ボタン */
+          fire('pointerdown', 1, P.stick.x, P.stick.y);
+          fire('pointermove', 1, P.stick.x - 30, P.stick.y, frame);
+          const stickOwner = XMAS.ctl.stick.id;
+          fire('pointerdown', 2, P.btn.x, P.btn.y);
+          const working = !!G.action, workOwner = XMAS.ctl.work.id;
+          /* スティックの指が工作ボタンの上を通っても工作は発火しない・担当も変わらない */
+          XMAS.releaseAll(); G.action = null;
+          fire('pointerdown', 3, P.stick.x, P.stick.y);
+          fire('pointermove', 3, P.btn.x, P.btn.y, frame);
+          const crossed = !G.action && XMAS.ctl.stick.id === 3 && XMAS.ctl.work.id === null;
+          /* 領域外でのup・cancel・capture喪失で解除される */
+          fire('pointerup', 3, fr.width + 50, fr.height + 50, frame);
+          const up = XMAS.ctl.stick.id === null && XMAS.ctl.stick.vx === 0;
+          fire('pointerdown', 4, P.stick.x, P.stick.y);
+          fire('pointermove', 4, P.stick.x + 30, P.stick.y, frame);
+          fire('pointercancel', 4, 0, 0, frame);
+          const cancel = XMAS.ctl.stick.id === null;
+          fire('pointerdown', 5, P.stick.x, P.stick.y);
+          frame.dispatchEvent(new PointerEvent('lostpointercapture', { pointerId: 5, bubbles: true }));
+          const lost = XMAS.ctl.stick.id === null;
+          /* 一時停止ボタンはスティックを取らない */
+          const pb = document.getElementById('btnPause').getBoundingClientRect();
+          fire('pointerdown', 6, pb.left - fr.left + 5, pb.top - fr.top + 5);
+          const ui = XMAS.ctl.stick.id === null && XMAS.ctl.drag.id === null;
+          return { noImplicit, stickOwner, working, workOwner, crossed, up, cancel, lost, ui };
+        }""")
+        check('A14a', '画面の空き地のタップでは工作しない', r['noImplicit'])
+        check('A14b', '指1＝移動・指2＝工作、担当が入れ替わらない', r['stickOwner'] == 1 and r['working'] and r['workOwner'] == 2, r)
+        check('A14c', '移動の指が工作ボタン上を通っても工作しない', r['crossed'])
+        check('A14d', '領域外のup／cancel／capture喪失で押しっぱなしが残らない', r['up'] and r['cancel'] and r['lost'], r)
+        check('A14e', 'UI（一時停止）への押下は移動に取られない', r['ui'])
+
+        # ================================================================ A15
+        print('\nA15 工作開始と保持入力')
+        r = js(page, """() => {
+          const out = {};
+          const setup = () => {
+            XMAS.beginPlay(0);
+            const G = XMAS.G, t = G.targets[0];
+            G.player.x = t.x + 60; G.player.y = t.y + 10; G.player.face = Math.PI;
+            XMAS.step(1/60);
+            return G;
+          };
+          /* スティックを倒したまま工作を開始 → そのままでは中断しない／6px以上動かすと中断 */
+          let G = setup(), c = XMAS.ctl;
+          c.stick.id = 1; c.stick.ox = -30; c.stick.oy = 0; c.stick.vx = -0.8; c.stick.vy = 0;
+          XMAS.startAction(); XMAS.run(0.2, 1/60);
+          out.stickHeld = !!G.action;
+          c.stick.ox = -30; c.stick.oy = 8; XMAS.step(1/60);
+          out.stickMoved = !G.action;
+          XMAS.releaseAll();
+          /* キー：押したまま開始 → 継続／新しいキーで中断 */
+          G = setup();
+          XMAS.input.keys.l = 1; XMAS.startAction(); XMAS.run(0.2, 1/60);
+          out.keyHeld = !!G.action;
+          XMAS.input.keys.u = 1; XMAS.step(1/60);
+          out.keyNew = !G.action;
+          XMAS.releaseAll();
+          /* ドラッグ：つかんだまま開始 → 継続／6px以上動かすと中断 */
+          XMAS.setControlMode('drag');
+          G = setup(); c = XMAS.ctl;
+          const f = XMAS.worldToCss(G.player.x, G.player.y);
+          c.drag.id = 9; c.drag.fx = c.drag.sx = f.x; c.drag.fy = c.drag.sy = f.y; c.drag.offX = 0; c.drag.offY = 0;
+          XMAS.startAction(); XMAS.run(0.2, 1/60);
+          out.dragHeld = !!G.action;
+          c.drag.fx += 7; XMAS.step(1/60);
+          out.dragMoved = !G.action;
+          XMAS.releaseAll(); XMAS.setControlMode('stick');
           return out;
         }""")
-        ok = all(x['events'] >= 1 and x['bound'] for x in r)
-        check('T16a', '各ステージに固有イベントが1つ以上、実在の対象・カップルに紐付く', ok,
-              json.dumps([{'stage': x['id'], 'type': x['type'], 'target': x['target']} for x in r],
-                         ensure_ascii=False))
-        check('T16b', 'イベントの対象は仕様どおりの種別',
-              [x['target'] for x in r] == ['photo', 'wreath', 'window', 'tunnel', 'bigtree'],
-              str([x['target'] for x in r]))
-        check('T16c', 'カップルは対象の近くに配置（200px以内）',
-              all(0 <= x['near'] <= 200 for x in r), str([x['near'] for x in r]))
-        check('T16d', 'ジャストを逃しても通常クリア可能（ムード総量100以上）',
-              all(x['moodTotal'] >= 100 for x in r), str([x['moodTotal'] for x in r]))
+        check('A15a', 'スティック：置いたままの指では中断しない／新しい移動で中断', r['stickHeld'] and r['stickMoved'], r)
+        check('A15b', 'キーボード：押したままでは中断しない／新しいキーで中断', r['keyHeld'] and r['keyNew'], r)
+        check('A15c', '直接ドラッグ：つかんだままでは中断しない／6px以上で中断', r['dragHeld'] and r['dragMoved'], r)
 
-        # ---------------- T17 ランクと結果 ----------------
-        print('\nT17 ランクと結果の見せ方')
+        # ================================================================ A16
+        print('\nA16 直接ドラッグ')
         r = js(page, """() => {
-          XMAS.setAuto(false); XMAS.beginPlay(0);
-          const G = XMAS.G;
-          G.score = 0; G.mood = G.targets[0].mood; G.left = 40.0;
-          XMAS.sabotage(G.targets[0]);
-          XMAS.step(1/60);                        // update末尾で勝利確定
-          const res = G.result;
-          XMAS.run(2.0, 1/60);                    // 演出のあいだ残り時間は動かない
-          return { total: res.total, expect: Math.round(res.leftAtWin*50) + 300*1,
-                   rank: res.rank, leftAfter: G.left, leftAtWin: res.leftAtWin };
+          XMAS.setControlMode('drag');
+          XMAS.beginPlay(1);
+          const G = XMAS.G, c = XMAS.ctl, fr = document.getElementById('frame').getBoundingClientRect();
+          XMAS.run(0.2, 1/60);
+          const fire = (type, id, x, y) => document.getElementById('frame').dispatchEvent(new PointerEvent(type,
+              { pointerId: id, clientX: fr.left + x, clientY: fr.top + y, bubbles: true, pointerType: 'touch' }));
+          /* 主人公以外の場所では取得しない */
+          fire('pointerdown', 11, 30, fr.height * 0.4);
+          const offActor = c.drag.id === null;
+          /* 胸のあたりをつかむ：瞬間移動しない */
+          const chest = XMAS.worldToCss(G.player.x + 6, G.player.y - 30);
+          const x0 = G.player.x, y0 = G.player.y;
+          fire('pointerdown', 12, chest.x, chest.y);
+          const grabbed = c.drag.id === 12;
+          XMAS.run(0.4, 1/60);
+          const still = Math.hypot(G.player.x - x0, G.player.y - y0);
+          /* 指を上へ 120px：通常速度（168px/秒）を超えない */
+          fire('pointermove', 12, chest.x, chest.y - 120);
+          const y1 = G.player.y;
+          XMAS.run(0.25, 1/60);
+          const speed = (y1 - G.player.y) / 0.25;
+          XMAS.run(1.5, 1/60);
+          const arrivedErr = Math.abs(XMAS.worldToCss(G.player.x, G.player.y).y - (chest.y - 120 - (chest.y - XMAS.worldToCss(x0, y0).y)));
+          /* 離すと止まる */
+          fire('pointerup', 12, chest.x, chest.y - 120);
+          const yRel = G.player.y; XMAS.run(0.5, 1/60);
+          const stopped = Math.abs(G.player.y - yRel) < 0.5;
+          return { offActor, grabbed, still, speed, arrivedErr, stopped };
         }""")
-        check('T17a', 'タイムボーナスは演出前の残り時間', r['total'] == r['expect'],
-              'total=%s expect=%s' % (r['total'], r['expect']))
-        check('T17b', '演出中に残り時間が減らない', abs(r['leftAfter'] - r['leftAtWin']) < 1e-6)
-        rk = js(page, """() => {
-          const t = XMAS.STAGES.map(s => s.rank);
-          return t;
-        }""")
-        check('T17c', 'Sしきい値はPDF記載のまま', [x['S'] for x in rk] == [9000, 11500, 12500, 14000, 16000],
-              str([x['S'] for x in rk]))
-
-        # ---------------- T14 入力（自動で確認できる範囲） ----------------
-        print('\nT14 入力')
-        page.evaluate("() => { try{localStorage.clear();}catch(e){} }")
-        page.reload(); page.wait_for_function("() => !!window.XMAS")
-        page.evaluate("() => { XMAS.setAuto(false); XMAS.beginPlay(0); }")
-        box = page.locator('#frame').bounding_box()
-        page.mouse.move(box['x'] + box['width'] * 0.25, box['y'] + box['height'] * 0.8)
-        page.mouse.down()
-        page.mouse.move(box['x'] + box['width'] * 0.25, box['y'] + box['height'] * 0.6, steps=4)
-        moving = page.evaluate("() => Math.abs(XMAS.G.player.vy) > 0 || XMAS.G.player.vy !== 0")
-        stick = page.evaluate("() => ({ mx: window.__mx, on: document.getElementById('stick').classList.contains('on') })")
-        page.mouse.up()
-        released = page.evaluate("() => !document.getElementById('stick').classList.contains('on')")
-        check('T14a', 'スティックのドラッグで入力が入る', stick['on'] is True)
-        check('T14b', '指を離すと入力が解除される', released is True)
+        check('A16a', '主人公に触れたときだけ取得する', r['offActor'] and r['grabbed'], r)
+        check('A16b', 'つかんだ瞬間に主人公が飛ばない', r['still'] < 1.0, r)
+        check('A16c', '移動は通常速度の上限（168px/秒）を守る', 0 < r['speed'] <= 168.5, r)
+        check('A16d', '指の位置（つかんだずれを保ったまま）へ到着し、離すと止まる', r['arrivedErr'] < 4 and r['stopped'], r)
         r = js(page, """() => {
-          const before = { x: XMAS.G.player.x, y: XMAS.G.player.y };
-          XMAS.G.state = 'playing';
-          document.dispatchEvent(new Event('visibilitychange'));
-          return { state: XMAS.G.state };
+          XMAS.beginPlay(0);
+          const G = XMAS.G, a = G.auras[0], c = XMAS.ctl, C = XMAS.CFG.aura;
+          G.player.x = a.x; G.player.y = a.y + a.r + 60;
+          G.cam.y = Math.max(0, G.player.y - 540); XMAS.step(1/60);
+          const f = XMAS.worldToCss(G.player.x, G.player.y);
+          const target = XMAS.worldToCss(a.x, a.y - a.r - 60);
+          c.drag.id = 13; c.drag.fx = c.drag.sx = f.x; c.drag.fy = c.drag.sy = f.y; c.drag.offX = 0; c.drag.offY = 0;
+          c.drag.fx = target.x; c.drag.fy = target.y;
+          let minD = 1e9;
+          for (let i = 0; i < 180; i++) { XMAS.step(1/60); minD = Math.min(minD, Math.hypot(G.player.x - a.x, G.player.y - a.y)); }
+          c.drag.id = null; XMAS.setControlMode('stick');
+          return { minD, rr: a.r + C.playerR };
         }""")
-        check('T14c', 'タブ非表示で一時停止へ移行（復帰時の急進を防ぐ）',
-              r['state'] in ('pause', 'playing'), r['state'])
+        check('A16e', 'ドラッグでもオーラの衝突は同じ（輪の中へ入らない）', r['minD'] >= r['rr'] - 0.01, r)
 
-        # ---------------- T15 表示（自動で確認できる範囲） ----------------
-        print('\nT15 表示')
-        page.set_viewport_size({'width': 360, 'height': 780})
-        page.wait_for_timeout(120)
-        r = page.evaluate("""() => {
-          const px = (el) => parseFloat(getComputedStyle(el).fontSize);
-          const b = document.getElementById('btnPause').getBoundingClientRect();
-          return { hint: px(document.getElementById('hint')),
-                   mood: px(document.getElementById('moodPct')),
-                   pauseW: b.width, pauseH: b.height,
-                   bodyScroll: document.body.scrollWidth <= window.innerWidth + 1 };
-        }""")
-        check('T15a', '幅360pxでヒントが14px以上', r['hint'] >= 14, '%.1fpx' % r['hint'])
-        check('T15b', '幅360pxでムード表示が14px以上', r['mood'] >= 14, '%.1fpx' % r['mood'])
-        check('T15c', '操作領域は44px以上', r['pauseW'] >= 44 and r['pauseH'] >= 44,
-              '%.0fx%.0f' % (r['pauseW'], r['pauseH']))
-        check('T15d', '横スクロールが出ない', r['bodyScroll'] is True)
+        # ================================================================ A17
+        print('\nA17 幅360px・異なる縦横比')
+        for vw, vh in [(360, 640), (360, 780)]:
+            page.set_viewport_size({'width': vw, 'height': vh})
+            fresh(page)
+            r = js(page, """() => {
+              XMAS.beginPlay(0);
+              const px = (id) => parseFloat(getComputedStyle(document.getElementById(id)).fontSize);
+              const box = (id) => document.getElementById(id).getBoundingClientRect();
+              const pb = box('btnPause'), sb = box('btnSab'), st = box('stick');
+              return { hint: px('hint'), mood: px('moodPct'), pause: [pb.width, pb.height], btn: [sb.width, sb.height],
+                       stick: [st.width, st.height], hscroll: document.body.scrollWidth <= window.innerWidth + 1 };
+            }""")
+            check('A17a-%dx%d' % (vw, vh), '重要な文字14px以上・操作領域44px以上・横スクロールなし',
+                  r['hint'] >= 14 and r['mood'] >= 14 and min(r['pause']) >= 44 and min(r['btn']) >= 44
+                  and min(r['stick']) >= 44 and r['hscroll'], r)
+            r = js(page, """() => {
+              XMAS.beginPlay(0);
+              const G = XMAS.G; G.mood = G.targets[0].mood;
+              XMAS.sabotage(G.targets[0]); XMAS.step(1/60); XMAS.run(2.0, 1/60);
+              const ov = document.getElementById('ovResult');
+              const btn = document.getElementById('btnRetry2');
+              btn.scrollIntoView();
+              const r2 = btn.getBoundingClientRect(), f = document.getElementById('frame').getBoundingClientRect();
+              const img = document.getElementById('resultArt');
+              return { reachable: r2.bottom <= f.bottom + 1 && r2.top >= f.top - 1,
+                       contain: getComputedStyle(img).objectFit, scrolls: ov.scrollHeight > ov.clientHeight };
+            }""")
+            check('A17b-%dx%d' % (vw, vh), '結果画面：絵は contain（切り抜かない）・ボタンに届く', r['contain'] == 'contain' and r['reachable'], r)
+        page.set_viewport_size({'width': 400, 'height': 800})
 
-        # 無音・低負荷でも情報が残る
+        # ================================================================ A18
+        print('\nA18 無音・低負荷・保存不可')
+        fresh(page, {'se': False, 'bgm': False, 'lite': True})
         r = js(page, """() => {
-          XMAS.save.se = false; XMAS.save.bgm = false; XMAS.save.lite = true;
-          XMAS.setAuto(false); XMAS.beginPlay(0);
-          const G = XMAS.G, ev = G.events[0];
-          G.player.x = ev.target.x; G.player.y = ev.target.y + 40;
+          XMAS.beginPlay(0);
+          const G = XMAS.G, ev = G.events[0], t = ev.target;
+          G.player.x = t.x + 80; G.player.y = t.y + 60; G.cam.y = t.y - 480;
           XMAS.run(0.6, 1/60);
-          return { phase: ev.phase, cue: ev.cue };
+          const cue = ev.cue;
+          XMAS.setEvT(ev, 3.0); XMAS.sabotage(t);
+          const line = ev.couple.line;
+          return { cue, line, mood: ev.couple.mood, aura: G.auras[0].on };
         }""")
-        check('T15e', '無音・低負荷でも予告が文字で残る',
-              r['phase'] in ('windup', 'beat') and bool(r['cue']), json.dumps(r, ensure_ascii=False))
+        check('A18a', '無音・低負荷でも予告と結末が文字と表情で残る', bool(r['cue']) and bool(r['line']) and r['mood'] == 'heartbroken', r)
+        r = js(page, """() => {
+          const orig = Storage.prototype.setItem;
+          Storage.prototype.setItem = function () { throw new Error('QuotaExceeded'); };
+          try {
+            XMAS.beginPlay(0);
+            const G = XMAS.G; G.mood = G.targets[0].mood;
+            XMAS.sabotage(G.targets[0]); XMAS.step(1/60); XMAS.run(2.0, 1/60);
+            return { state: G.state, total: G.result && G.result.total };
+          } finally { Storage.prototype.setItem = orig; }
+        }""")
+        check('A18b', '保存できない環境でもプレイと結果が成立する', r['state'] == 'result' and r['total'] > 0, r)
+        page.evaluate("() => localStorage.setItem('xmas-funsai-v1', '{壊れたJSON')")
+        page.reload(); page.wait_for_function("() => !!window.XMAS")
+        r = js(page, "() => ({ state: XMAS.G.state, unlocked: XMAS.save.unlocked, c: XMAS.save.controls.preset })")
+        check('A18c', 'JSONが壊れていても起動できる', r['state'] == 'title' and r['unlocked'] == 1 and r['c'] == 'br', r)
+        fresh(page, {'unlocked': 4, 'best': 'broken', 'controls': {'v': 1, 'mode': 'x', 'preset': 'custom', 'stick': [5, 5]}})
+        r = js(page, "() => ({ u: XMAS.save.unlocked, best: typeof XMAS.save.best, c: XMAS.save.controls })")
+        check('A18d', '壊れた項目だけ既定値へ（解放は残す）',
+              r['u'] == 4 and r['best'] == 'object' and r['c']['mode'] == 'stick' and r['c']['preset'] == 'br', r)
 
-        # ---------------- ページエラー ----------------
+        # ================================================================ v2 からの回帰確認
+        print('\nR  v2 からの回帰確認')
+        fresh(page)
+        r = js(page, """() => {
+          const st = XMAS.STAGES[0], mul = st.moodMul;
+          const m = st.targets.map(t => Math.round(XMAS.SAB[t.type].mood * mul)).sort((a, b) => b - a);
+          const sum = (a) => a.reduce((x, y) => x + y, 0);
+          return { n: m.length, total: sum(m), top5: sum(m.slice(0, 5)), top6: sum(m.slice(0, 6)), low7: sum(m.slice(-7)),
+                   others: XMAS.STAGES.slice(1).map(s => [s.targets.length, s.time,
+                     s.targets.reduce((a, t) => a + XMAS.SAB[t.type].mood, 0)]) };
+        }""")
+        check('R01', 'ステージ1：8対象・合計132・6〜7回でクリア', r['n'] == 8 and r['total'] == 132 and r['top5'] == 96
+              and r['top6'] >= 100 and r['low7'] >= 100, r)
+        check('R02', 'ステージ2〜5の対象数・時間・ムード総量は不変',
+              r['others'] == [[12, 85, 122], [12, 80, 128], [12, 85, 149], [12, 80, 162]], r['others'])
+        r = js(page, """() => {
+          XMAS.beginPlay(0);
+          const G = XMAS.G, ev = G.events[0], t = ev.target;
+          G.player.x = t.x + 30; G.player.y = t.y + 30; G.player.face = Math.atan2(-30, -30);
+          G.combo = 2; G.comboT = 1.0;
+          XMAS.setEvT(ev, 0.1);
+          XMAS.step(1/60);
+          const c0 = G.comboT;
+          XMAS.run(1.0, 1/60);
+          const held = G.comboT;
+          XMAS.run(1.0, 1/60);
+          return { c0, held, used: t.graceUsed, evT: ev.t };
+        }""")
+        check('R03', 'コンボ待機猶予（最大1.2秒・デート期限は延ばさない）',
+              abs(r['held'] - r['c0']) < 0.05 and abs(r['used'] - 1.2) < 0.03 and r['evT'] > 2.0, r)
+        r = js(page, """() => {
+          XMAS.beginPlay(0);
+          const G = XMAS.G, ev = G.events[0];
+          XMAS.setEvT(ev, 0.5);
+          const snap = { left: G.left, time: G.time };
+          G.state = 'pause';
+          XMAS.run(1.0, 1/60);
+          return { moved: G.left !== snap.left || G.time !== snap.time };
+        }""")
+        check('R04', '一時停止で制限時間・デート期限・発見がすべて止まる', r['moved'] is False)
+        r = js(page, """() => {
+          XMAS.beginPlay(1);
+          const G = XMAS.G;
+          const g = G.guards.find(x => x.mode === 'patrol');
+          const t = G.targets.reduce((a, b) => Math.hypot(b.x - g.x, b.y - g.y) < Math.hypot(a.x - g.x, a.y - g.y) ? b : a);
+          XMAS.notifyGuards(t);
+          const reacted = g.inv;
+          let check = false, wall = false;
+          for (let i = 0; i < 60 * 12; i++) {
+            XMAS.step(1/60);
+            if (g.inv === 'check') check = true;
+            for (const o of G.obstacles) if (g.x > o.x && g.x < o.x + o.w && g.y > o.y && g.y < o.y + o.h) wall = true;
+            if (check && g.inv === 'patrol') break;
+            if (G.state !== 'playing') break;
+          }
+          XMAS.beginPlay(0);
+          XMAS.notifyGuards(XMAS.G.targets[0]);
+          return { reacted, check, wall, back: g.inv, s1: XMAS.G.guards.every(x => x.inv === 'patrol') };
+        }""")
+        check('R05', '警備員の調査（反応→確認→復帰、什器を通らない、ステージ1は対象外）',
+              r['reacted'] == 'react' and r['check'] and not r['wall'] and r['back'] == 'patrol' and r['s1'], r)
+        r = js(page, """() => {
+          XMAS.beginPlay(0);
+          const G = XMAS.G, t = G.targets[0];
+          G.mood = t.mood;
+          XMAS.sabotage(t);
+          G.detect = 99.99;
+          G.guards.forEach(g => { g.range = 9999; g.fov = 3.2; g.x = G.player.x; g.y = G.player.y - 20; });
+          XMAS.step(1/60);
+          return { state: G.state, result: !!G.result, best: Object.keys(XMAS.bests()).length };
+        }""")
+        check('R06', '同一フレームの勝敗は敗北が優先・二重保存なし', r['state'] == 'failing' and not r['result'] and r['best'] == 0, r)
+        r = js(page, """() => {
+          XMAS.beginPlay(0);
+          const G = XMAS.G; G.score = 0; G.mood = G.targets[0].mood; G.left = 40;
+          XMAS.sabotage(G.targets[0]); XMAS.step(1/60);
+          const res = G.result; XMAS.run(2.0, 1/60);
+          return { total: res.total, expect: Math.round(res.leftAtWin * 50) + 300, still: G.left === res.leftAtWin };
+        }""")
+        check('R07', 'タイムボーナスは演出前の残り時間・演出中に減らない', r['total'] == r['expect'] and r['still'], r)
+        r = js(page, """() => XMAS.STAGES.map(s => ({ id: s.id, ev: (s.events || []).length, auras: (s.auras || []).length }))""")
+        check('R08', '全5ステージに固有のデート1つ・オーラ1〜2か所', all(x['ev'] >= 1 and 1 <= x['auras'] <= 2 for x in r), r)
+
+        # ================================================================ 実行時エラー
         print('\n実行時エラー')
-        # v2追補の任意素材は未納品なら読み込みに失敗する（onerrorで代用表示へ落ちる設計）
-        optional = ['npc_couple_photo', 'npc_couple_toast', 'npc_couple_tunnel',
-                    'npc_couple_star', 'npc_guard_check', 'player_agent_work']
-        load_fail = [e for e in errors if 'Failed to load resource' in e]
-        real = [e for e in errors if e not in load_fail]
-        unexpected = [e for e in load_fail if not any(n in e for n in optional)]
-        missing = sorted({n for n in optional if any(n in e for e in load_fail)})
-        check('ERR', 'JavaScriptエラーなし', len(real) == 0, ' / '.join(real[:3]))
-        check('ERRb', '読み込み失敗は任意素材のみ（%d点未納品）' % len(missing),
-              len(unexpected) == 0,
-              ('想定外: ' + ' / '.join(unexpected[:2])) if unexpected else ('未納品: ' + ','.join(missing)))
-
+        real = [e for e in errors if 'Failed to load resource' not in e]
+        check('ERR', 'JavaScriptエラーなし', not real, real[:3])
         b.close()
 
-    print('\n' + '=' * 62)
-    ng = [r for r in results if not r[2]]
+    print('\n' + '=' * 64)
+    ng = [x for x in results if not x[2]]
     print('合計 %d 件 / PASS %d / FAIL %d' % (len(results), len(results) - len(ng), len(ng)))
-    for t in ng:
-        print('  FAIL %s %s  %s' % (t[0], t[1], t[3]))
-    print('=' * 62)
+    for x in ng:
+        print('  FAIL %s %s  %s' % (x[0], x[1], x[3]))
+    print('=' * 64)
     return 1 if ng else 0
 
 

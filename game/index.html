@@ -26,6 +26,7 @@
   --body:"Noto Sans JP",system-ui,sans-serif;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{height:100%}
 body{
   margin:0; background:var(--night); color:var(--text);
@@ -39,13 +40,16 @@ body{
   width:min(100vw, calc(100dvh * 9 / 16));
   height:min(100dvh, calc(100vw * 16 / 9));
   background:var(--night);
-  touch-action:none; user-select:none;
+  user-select:none; -webkit-user-select:none;
   box-shadow:0 0 calc(var(--u)*60) rgba(0,0,0,.8);
 }
-canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block}
+/* ゲーム面だけスクロール・ズームを止める。設定やステージ一覧のスクロールは潰さない */
+canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none}
+#safeProbe{position:fixed; inset:0; visibility:hidden; pointer-events:none;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 
 /* ── HUD ── */
-#hud{position:absolute; inset:0; pointer-events:none; font-family:var(--hud)}
+#hud{position:absolute; inset:0; pointer-events:none; font-family:var(--hud); touch-action:none}
 #hud.hide{display:none}
 
 #topbar{
@@ -137,37 +141,55 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block}
 #danger{position:absolute; inset:0; pointer-events:none; opacity:0;
   background:radial-gradient(ellipse at center, transparent 42%, rgba(255,74,92,.55) 100%)}
 
-/* ── 操作系 ── */
-#stick{position:absolute; width:calc(var(--u)*140); height:calc(var(--u)*140); opacity:0; transition:opacity .16s}
-#stick.on{opacity:1}
-#stickBase{position:absolute; inset:0; border-radius:50%; border:calc(var(--u)*2) solid rgba(143,160,192,.35); background:rgba(14,20,38,.34)}
-#stickKnob{position:absolute; left:50%; top:50%; width:calc(var(--u)*58); height:calc(var(--u)*58); margin:calc(var(--u)*-29) 0 0 calc(var(--u)*-29);
-  border-radius:50%; background:rgba(220,238,255,.5); border:calc(var(--u)*2) solid rgba(231,238,251,.75)}
+/* ── 操作系（寸法は CSS px。位置は JS が安全領域から計算して置く） ── */
+#stick{position:absolute; width:88px; height:88px; pointer-events:none}
+#stickBase{position:absolute; inset:0; border-radius:50%;
+  border:2px solid rgba(231,238,251,.6); background:rgba(10,14,28,.46);
+  box-shadow:0 0 0 1px rgba(10,14,28,.7), inset 0 0 18px rgba(220,238,255,.14)}
+#stickKnob{position:absolute; left:50%; top:50%; width:36px; height:36px; margin:-18px 0 0 -18px;
+  border-radius:50%; background:rgba(220,238,255,.78); border:2px solid #fff;
+  box-shadow:0 2px 8px rgba(0,0,0,.55)}
+#stick::after{content:"移動"; position:absolute; left:0; right:0; top:100%; margin-top:4px;
+  text-align:center; font-family:var(--body); font-size:12px; font-weight:700; color:rgba(231,238,251,.8);
+  text-shadow:0 1px 3px rgba(0,0,0,.9)}
+#stick.active #stickBase{border-color:var(--gold); box-shadow:0 0 16px rgba(255,192,105,.4), inset 0 0 18px rgba(255,192,105,.18)}
 
 #btnSab{
-  position:absolute; right:calc(var(--u)*26); bottom:calc(var(--u)*46);
-  width:calc(var(--u)*118); height:calc(var(--u)*118); border-radius:50%;
-  border:calc(var(--u)*2) solid rgba(143,160,192,.3); background:rgba(14,20,38,.5);
-  color:var(--muted); font-family:var(--disp); font-size:calc(var(--u)*23); letter-spacing:.06em;
-  display:grid; place-items:center; pointer-events:none;
+  position:absolute; width:76px; height:76px; border-radius:50%; padding:0;
+  border:2px solid rgba(231,238,251,.55); background:rgba(10,14,28,.6);
+  color:var(--text); font-family:var(--disp); font-size:18px; letter-spacing:.06em;
+  display:grid; place-items:center; pointer-events:auto; cursor:pointer; touch-action:none;
+  box-shadow:0 0 0 1px rgba(10,14,28,.7);
   transition:transform .12s, background .15s, color .15s, border-color .15s, box-shadow .2s}
-body.lefty #btnSab{right:auto; left:calc(var(--u)*26)}
 #btnSab.ready{
-  color:#1A0B10; border-color:#FF8A98; background:radial-gradient(circle at 38% 32%, #FF9AA6, var(--alert) 66%);
-  box-shadow:0 0 calc(var(--u)*34) rgba(255,74,92,.55); animation:pulse 1.05s ease-in-out infinite}
+  color:#1A0B10; border-color:#FFD2D8; background:radial-gradient(circle at 38% 32%, #FF9AA6, var(--alert) 66%);
+  box-shadow:0 0 0 3px rgba(255,192,105,.9), 0 0 26px rgba(255,74,92,.6); animation:pulse 1.05s ease-in-out infinite}
 #btnSab.press{transform:scale(.93); animation:none}
-@keyframes pulse{0%,100%{box-shadow:0 0 calc(var(--u)*22) rgba(255,74,92,.42)}50%{box-shadow:0 0 calc(var(--u)*46) rgba(255,74,92,.75)}}
-#sabRing{position:absolute; inset:calc(var(--u)*-9); border-radius:50%; opacity:0;
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(255,192,105,.9), 0 0 16px rgba(255,74,92,.42)}50%{box-shadow:0 0 0 3px rgba(255,192,105,.9), 0 0 34px rgba(255,74,92,.78)}}
+#sabRing{position:absolute; inset:-8px; border-radius:50%; opacity:0; pointer-events:none;
   background:conic-gradient(var(--cold) var(--deg,0deg), transparent 0deg);
   -webkit-mask:radial-gradient(circle, transparent 60%, #000 62%);
   mask:radial-gradient(circle, transparent 60%, #000 62%)}
 #sabRing.on{opacity:1}
 
+/* 最初のジャスト／期限切れだけ、画面端に0.8秒出す反応カード（操作は奪わない） */
+#reactCard{position:absolute; left:10px; top:36%; width:92px; height:116px; border-radius:12px; overflow:hidden;
+  pointer-events:none; opacity:0; transform:translateX(-10px); transition:opacity .15s, transform .15s;
+  background:rgba(10,14,28,.9); border:2px solid var(--line)}
+#reactCard.on{opacity:1; transform:none}
+#reactCard.just{border-color:var(--gold)}
+#reactCard.missed{border-color:#FF7DB0}
+#reactCard img{width:100%; height:100%; object-fit:cover; object-position:50% 8%}
+#reactCard b{position:absolute; left:0; right:0; bottom:0; padding:4px 0; text-align:center;
+  font-family:var(--hud); font-size:13px; letter-spacing:.12em; background:rgba(10,14,28,.82); color:var(--gold)}
+#reactCard.missed b{color:#FFB3D1}
+
 /* ── オーバーレイ共通 ── */
 .ov{position:absolute; inset:0; display:none; flex-direction:column; pointer-events:auto;
-  background:linear-gradient(180deg, rgba(10,14,28,.9), rgba(10,14,28,.97)); z-index:5}
+  background:linear-gradient(180deg, rgba(10,14,28,.9), rgba(10,14,28,.97)); z-index:5;
+  overflow-y:auto; overscroll-behavior:contain; touch-action:pan-y}
 .ov.on{display:flex}
-.ov .pad{flex:1; display:flex; flex-direction:column; justify-content:center; gap:calc(var(--u)*16);
+.ov .pad{flex:1 0 auto; display:flex; flex-direction:column; justify-content:center; gap:calc(var(--u)*16);
   padding-block:calc(var(--u)*26); padding-left:calc(var(--u)*26); padding-right:calc(var(--u)*26)}
 .eyebrow{font-family:var(--hud); font-size:calc(var(--u)*11); letter-spacing:.3em; color:var(--muted)}
 .btn{
@@ -214,32 +236,107 @@ body.lefty #btnSab{right:auto; left:calc(var(--u)*26)}
 .slot .best b{display:block; font-family:var(--disp); font-size:calc(var(--u)*19); color:var(--cold)}
 .slot[disabled]{opacity:.38; cursor:default}
 
-/* ── 結果 ── */
-#rankBadge{font-family:var(--disp); font-size:calc(var(--u)*96); line-height:.9; text-align:center;
-  color:var(--cold); text-shadow:0 0 calc(var(--u)*40) rgba(220,238,255,.45)}
-#rankBadge.S{color:var(--gold); text-shadow:0 0 calc(var(--u)*48) rgba(255,192,105,.6)}
-#rankBadge.C{color:var(--muted); text-shadow:none}
-#titleAward{text-align:center; font-family:var(--disp); font-size:calc(var(--u)*21); color:var(--gold)}
-#awardCap{text-align:center; font-family:var(--hud); font-size:calc(var(--u)*10); letter-spacing:.3em; color:var(--muted)}
-#statList{display:grid; gap:calc(var(--u)*1); border:1px solid var(--line); border-radius:calc(var(--u)*11); overflow:hidden}
-#statList div{display:flex; justify-content:space-between; align-items:baseline;
-  padding:calc(var(--u)*10) calc(var(--u)*14); background:rgba(20,27,48,.62); font-size:calc(var(--u)*13); color:var(--muted)}
-#statList b{font-family:var(--hud); font-size:calc(var(--u)*18); color:var(--text); font-variant-numeric:tabular-nums}
+/* ── 結果（通常成功・全任務達成） ── */
+#ovResult .pad, #ovFail .pad{gap:calc(var(--u)*12)}
+.panel{position:relative; margin:0; width:100%; aspect-ratio:3/2; max-width:100%; border-radius:calc(var(--u)*12);
+  overflow:hidden; background:#060912; border:1px solid var(--line)}
+.panel img{width:100%; height:100%; object-fit:contain; display:block}   /* cover で切り抜くと人物と靴が消える */
+.panel.none{display:none}
+#rankBadge{position:absolute; right:calc(var(--u)*12); bottom:calc(var(--u)*6);
+  font-family:var(--disp); font-size:calc(var(--u)*64); line-height:1;
+  color:var(--cold); text-shadow:0 0 calc(var(--u)*24) rgba(10,14,28,.95), 0 0 calc(var(--u)*30) rgba(220,238,255,.35)}
+#rankBadge.S{color:var(--gold); text-shadow:0 0 calc(var(--u)*24) rgba(10,14,28,.95), 0 0 calc(var(--u)*34) rgba(255,192,105,.55)}
+#rankBadge.C{color:var(--muted)}
+.resHead{display:flex; flex-direction:column; align-items:center; gap:calc(var(--u)*4); text-align:center}
+.resHead h2{margin:0; font-family:var(--disp); font-size:calc(var(--u)*34); line-height:1.1; font-weight:400; text-wrap:balance}
+#resultHead{color:var(--gold)}
+#resultSub, #failSub{font-size:max(calc(var(--u)*14), 14px); color:var(--muted)}
+#awardRow{display:flex; justify-content:center; align-items:baseline; gap:calc(var(--u)*10)}
+#awardCap{font-family:var(--hud); font-size:calc(var(--u)*10); letter-spacing:.3em; color:var(--muted)}
+#titleAward{font-family:var(--disp); font-size:calc(var(--u)*19); color:var(--cold)}
+#statList{display:grid; grid-template-columns:1fr 1fr; gap:1px; border:1px solid var(--line); border-radius:calc(var(--u)*11);
+  overflow:hidden; background:var(--line)}
+#statList div{display:flex; justify-content:space-between; align-items:baseline; gap:calc(var(--u)*6);
+  padding:calc(var(--u)*9) calc(var(--u)*12); background:rgba(20,27,48,.92); font-size:max(calc(var(--u)*12), 12px); color:var(--muted)}
+#statList b{font-family:var(--hud); font-size:calc(var(--u)*17); color:var(--text); font-variant-numeric:tabular-nums}
 #scoreLine{display:flex; justify-content:space-between; align-items:baseline; padding:0 calc(var(--u)*2)}
-#scoreLine b{font-family:var(--disp); font-size:calc(var(--u)*34); color:var(--text); font-variant-numeric:tabular-nums}
+#scoreLine b{font-family:var(--disp); font-size:calc(var(--u)*32); color:var(--text); font-variant-numeric:tabular-nums}
 #highlight{
-  text-align:center; font-family:var(--disp); font-size:calc(var(--u)*20); color:var(--gold);
-  text-shadow:0 0 calc(var(--u)*26) rgba(255,192,105,.45); opacity:0; min-height:calc(var(--u)*24)}
-#highlight.on{opacity:1}
+  text-align:center; font-family:var(--disp); font-size:calc(var(--u)*19); color:var(--gold);
+  text-shadow:0 0 calc(var(--u)*26) rgba(255,192,105,.45); display:none}
+#highlight.on{display:block}
 #finale{
   text-align:center; font-family:var(--body); font-size:max(calc(var(--u)*13), 13px); color:var(--cold);
-  border-top:1px solid var(--line); padding-top:calc(var(--u)*12); margin-top:calc(var(--u)*2); display:none}
+  border-top:1px solid var(--line); padding-top:calc(var(--u)*10); display:none}
 #finale.on{display:block}
+.protoNote{text-align:center; font-family:var(--body); font-size:12px; color:var(--muted); line-height:1.6}
+.protoNote:empty{display:none}
 
 /* ── 失敗 ── */
 #ovFail{background:linear-gradient(180deg, rgba(38,8,14,.92), rgba(10,14,28,.97))}
-#failTtl{font-family:var(--disp); font-size:calc(var(--u)*44); text-align:center; color:var(--alert)}
-#failSub{text-align:center; font-size:calc(var(--u)*14); color:var(--muted); margin-top:calc(var(--u)*-6)}
+#ovFail .panel{border-color:rgba(255,74,92,.45)}
+#failTtl{color:var(--alert)}
+.chip{font-family:var(--hud); font-size:max(calc(var(--u)*12), 12px); letter-spacing:.16em; color:var(--alert);
+  border:1px solid rgba(255,74,92,.5); border-radius:999px; padding:calc(var(--u)*3) calc(var(--u)*12)}
+
+/* ── 全ステージ制覇：破局エンディング（背景・文字色はすべて明示） ── */
+#ovEnding{background:transparent; z-index:8; overflow:hidden; touch-action:none; cursor:pointer}
+#endDim{position:absolute; inset:0; background:#04060C; opacity:0}
+#endArtFig{position:absolute; left:0; right:0; top:12%; margin:0; aspect-ratio:3/2}
+#endArt{width:100%; height:100%; object-fit:contain; display:block; opacity:0}
+#endCouple{position:absolute; left:50%; top:18%; height:44%; aspect-ratio:646/768; transform:translateX(-50%); opacity:0}
+#endCouple img{position:absolute; left:50%; bottom:0; height:100%; transform:translateX(-50%)}
+#endBreakup{opacity:0}
+.endLine{position:absolute; left:calc(var(--u)*24); right:calc(var(--u)*24); margin:0; text-align:center; opacity:0;
+  font-family:var(--body); font-weight:500; font-size:max(calc(var(--u)*19), 15px); color:#E7EEFB;
+  text-shadow:0 2px 10px rgba(0,0,0,.9)}
+#endLineA{top:66%}
+#endLineB{top:72%; color:#B9C4DA}
+#endHero{position:absolute; left:calc(var(--u)*24); right:calc(var(--u)*24); bottom:12%;
+  display:flex; align-items:flex-end; justify-content:center; gap:calc(var(--u)*14); opacity:0}
+#endHero img{height:calc(var(--u)*200); width:auto}
+#endHero span{display:block; font-family:var(--disp); font-size:calc(var(--u)*34); color:var(--gold); line-height:1.1}
+#endHero small{display:block; margin-top:calc(var(--u)*6); font-family:var(--hud); font-size:max(calc(var(--u)*12), 12px);
+  letter-spacing:.24em; color:#B9C4DA}
+#endPrompt{position:absolute; left:0; right:0; bottom:4%; text-align:center; opacity:0; transition:opacity .4s;
+  font-family:var(--hud); font-size:13px; letter-spacing:.24em; color:#8FA0C0}
+
+/* ── 配置の調整（この画面でだけスティックと工作ボタンを動かせる） ── */
+#ovLayout{background:rgba(10,14,28,.82); z-index:7; overflow:hidden; touch-action:none}
+#edHud{position:absolute; left:0; right:0; top:0; display:grid; place-items:center;
+  background:repeating-linear-gradient(135deg, rgba(38,49,79,.55) 0 10px, rgba(20,27,48,.55) 10px 20px);
+  border-bottom:1px dashed var(--line); font-size:12px; color:var(--muted)}
+.edPanel{position:absolute; left:calc(var(--u)*22); right:calc(var(--u)*22); top:calc(var(--u)*230);
+  display:grid; gap:10px; padding:14px; border:1px solid var(--line); border-radius:12px; background:rgba(14,20,38,.94)}
+.edPanel p{margin:0; font-size:14px; line-height:1.6; color:var(--text)}
+.edItem{position:absolute; border-radius:50%; display:grid; place-items:center; z-index:2; cursor:grab; touch-action:none;
+  font-family:var(--body); font-size:13px; font-weight:700; color:#0A0E1C}
+#edStick{width:112px; height:112px; background:rgba(220,238,255,.82); border:2px dashed #fff}
+#edBtn{width:76px; height:76px; background:rgba(255,154,166,.92); border:2px dashed #fff}
+#edStick.dim{opacity:.55}
+
+/* ── 選択ボタン（操作方法・操作位置） ── */
+.seg{display:flex; border:1px solid var(--line); border-radius:12px; overflow:hidden}
+.seg button{flex:1; min-height:44px; padding:0 6px; border:0; background:rgba(20,27,48,.9); color:var(--muted);
+  font-family:var(--body); font-weight:700; font-size:max(calc(var(--u)*14), 14px); cursor:pointer}
+.seg button + button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:rgba(255,192,105,.2); color:var(--gold)}
+.seg button:focus-visible{outline:2px solid var(--cold); outline-offset:-2px}
+.modePick{display:flex; align-items:center; gap:10px}
+.modePick > span{flex:0 0 auto; font-family:var(--hud); font-size:12px; letter-spacing:.2em; color:var(--gold)}
+.modePick .seg{flex:1}
+.newEnding{text-align:center; font-size:13px; color:#FFB3D1}
+.modeNote{font-size:12px; line-height:1.6; color:var(--muted); margin-top:calc(var(--u)*-4)}
+.setGroup{display:grid; gap:10px; padding:14px 0; border-bottom:1px solid var(--line)}
+.setGroup .lbl{display:flex; justify-content:space-between; align-items:baseline; font-size:max(calc(var(--u)*15), 14px)}
+.setGroup .lbl small{font-size:12px; color:var(--gold)}
+#protoStats table{width:100%; border-collapse:collapse; font-size:12px; color:var(--muted)}
+#protoStats th, #protoStats td{padding:5px 4px; text-align:right; border-bottom:1px solid var(--line); font-weight:400;
+  font-variant-numeric:tabular-nums}
+#protoStats th:first-child{text-align:left; color:var(--text)}
+.slot.ending{border-color:rgba(255,125,176,.55)}
+.slot.ending .no{color:#FFB3D1}
+.slot .best b.new{font-family:var(--hud); font-size:12px; color:#FFB3D1; letter-spacing:.14em}
 
 /* ── 設定 ── */
 .set{display:flex; justify-content:space-between; align-items:center; gap:calc(var(--u)*12);
@@ -286,9 +383,12 @@ body.lefty #btnSab{right:auto; left:calc(var(--u)*26)}
     <div id="hint"></div>
     <div id="centerMsg"></div>
 
+    <div id="reactCard"><img id="reactImg" alt=""><b id="reactTxt">JUST</b></div>
+
     <div id="stick"><div id="stickBase"></div><div id="stickKnob"></div></div>
-    <button id="btnSab">工作<div id="sabRing"></div></button>
+    <button id="btnSab" aria-label="工作">工作<span id="sabRing"></span></button>
   </div>
+  <div id="safeProbe"></div>
 
   <!-- タイトル -->
   <section id="ovTitle" class="ov on">
@@ -303,10 +403,18 @@ body.lefty #btnSab{right:auto; left:calc(var(--u)*26)}
         <div><b>注意</b><span>視線に入り続けると発見される</span></div>
       </div>
       <button class="btn primary" id="btnStart">任務開始</button>
+      <div class="modePick"><span>操作</span>
+        <div class="seg" role="group" aria-label="操作方法">
+          <button data-mode="stick" aria-pressed="true">スティック</button>
+          <button data-mode="drag" aria-pressed="false">主人公ドラッグ</button>
+        </div>
+      </div>
+      <div class="modeNote">同じステージを両方式で遊び比べられます。初移動・初工作までの秒数などは「設定」に記録されます。</div>
       <div class="row">
         <button class="btn" id="btnSelect">ステージ選択</button>
         <button class="btn" id="btnSettings">設定</button>
       </div>
+      <div id="newEnding" class="newEnding" hidden>新しいエンディングが解放されました（ステージ選択から）</div>
     </div>
   </section>
 
@@ -322,15 +430,18 @@ body.lefty #btnSab{right:auto; left:calc(var(--u)*26)}
   <!-- 結果 -->
   <section id="ovResult" class="ov">
     <div class="pad">
-      <div class="eyebrow" id="resultEyebrow">MISSION CLEAR</div>
-      <div id="rankBadge">S</div>
-      <div id="awardCap">称号</div>
-      <div id="titleAward">聖夜の経費削減担当</div>
+      <figure class="panel"><img id="resultArt" alt="任務を終えた工作員と、落胆するカップル"><div id="rankBadge">S</div></figure>
+      <div class="resHead">
+        <div class="eyebrow" id="resultEyebrow">MISSION CLEAR</div>
+        <h2 id="resultHead">任務達成</h2>
+        <div id="resultSub">聖夜の平日化に成功</div>
+      </div>
+      <div id="awardRow"><span id="awardCap">称号</span><span id="titleAward">聖夜の経費削減担当</span></div>
       <div id="statList">
-        <div><span>クリアタイム</span><b id="stTime">00.0</b></div>
+        <div><span>タイム</span><b id="stTime">00.0</b></div>
         <div><span>最大コンボ</span><b id="stCombo">x1</b></div>
-        <div><span>ジャスト妨害</span><b id="stJust">0</b></div>
-        <div><span>発見寸前の回避</span><b id="stClose">0</b></div>
+        <div><span>ジャスト</span><b id="stJust">0</b></div>
+        <div><span>寸前回避</span><b id="stClose">0</b></div>
       </div>
       <div id="scoreLine"><span class="eyebrow">SCORE</span><b id="stScore">0</b></div>
       <div id="highlight">初任務、完了</div>
@@ -340,17 +451,38 @@ body.lefty #btnSab{right:auto; left:calc(var(--u)*26)}
         <button class="btn" id="btnRetry2">もう一度</button>
         <button class="btn" id="btnSelect2">ステージ選択</button>
       </div>
+      <button class="btn ghost" id="btnEnding">エンディングを見る</button>
+      <div class="protoNote" id="protoNote"></div>
     </div>
   </section>
 
   <!-- 失敗 -->
   <section id="ovFail" class="ov">
     <div class="pad">
-      <div id="failTtl">発見された</div>
-      <div id="failSub">工作員は撤退した</div>
+      <figure class="panel"><img id="failArt" alt="悔しがる工作員と、寄り添うカップル"></figure>
+      <div class="resHead">
+        <div class="chip" id="failReason">発見された</div>
+        <h2 id="failTtl">任務失敗</h2>
+        <div id="failSub">「……設備点検です」</div>
+      </div>
       <button class="btn primary" id="btnRetry">もう一度</button>
       <button class="btn" id="btnSelect3">ステージ選択</button>
+      <div class="protoNote" id="protoNoteF"></div>
     </div>
+  </section>
+
+  <!-- 全ステージ制覇：破局エンディング -->
+  <section id="ovEnding" class="ov" aria-label="エンディング">
+    <div id="endDim"></div>
+    <figure id="endArtFig"><img id="endArt" src="assets/v3/ending_all_clear_breakup.jpg" alt="背を向けて別れるカップルと、満足げな工作員"></figure>
+    <div id="endCouple">
+      <img id="endLovey" src="assets/v3/npc_couple_lovey.png" alt="">
+      <img id="endBreakup" src="assets/v3/npc_couple_breakup.png" alt="">
+    </div>
+    <p id="endLineA" class="endLine">女性「……もう、終わりにしよう」</p>
+    <p id="endLineB" class="endLine">男性「……ああ」</p>
+    <div id="endHero"><img src="assets/v3/player_agent_success.png" alt=""><div><span>任務、完了</span><small>ALL MISSIONS COMPLETE</small></div></div>
+    <div id="endPrompt">TAP TO CONTINUE</div>
   </section>
 
   <!-- 一時停止 -->
@@ -371,11 +503,41 @@ body.lefty #btnSab{right:auto; left:calc(var(--u)*26)}
       <div class="set"><span>BGM</span><button class="sw" id="swBgm" role="switch" aria-checked="true"></button></div>
       <div class="set"><span>効果音</span><button class="sw" id="swSe" role="switch" aria-checked="true"></button></div>
       <div class="set"><span>振動（ハプティクス）</span><button class="sw" id="swHap" role="switch" aria-checked="true"></button></div>
-      <div class="set"><span>左利きモード</span><button class="sw" id="swLefty" role="switch" aria-checked="false"></button></div>
       <div class="set"><span>低負荷モード</span><button class="sw" id="swLite" role="switch" aria-checked="false"></button></div>
+      <div class="setGroup">
+        <div class="lbl"><span>操作方法</span></div>
+        <div class="seg" role="group" aria-label="操作方法">
+          <button data-mode="stick" aria-pressed="true">スティック</button>
+          <button data-mode="drag" aria-pressed="false">主人公ドラッグ</button>
+        </div>
+        <div class="lbl"><span>操作位置</span><small id="presetNote"></small></div>
+        <div class="seg" role="group" aria-label="操作位置">
+          <button data-preset="br" aria-pressed="true">右下</button>
+          <button data-preset="bc" aria-pressed="false">中央下</button>
+          <button data-preset="bl" aria-pressed="false">左下</button>
+        </div>
+        <button class="btn" id="btnLayout">位置を調整</button>
+        <div id="protoStats"></div>
+      </div>
       <button class="btn" id="btnSetBack">閉じる</button>
       <button class="btn ghost" id="btnWipe">記録を消去</button>
     </div>
+  </section>
+
+  <!-- 操作位置の調整 -->
+  <section id="ovLayout" class="ov" aria-label="操作位置の調整">
+    <div id="edHud"><span>HUDの領域（ここには置けません）</span></div>
+    <div class="edPanel">
+      <div class="eyebrow">CONTROL LAYOUT</div>
+      <p>スティックと工作ボタンをドラッグして動かします。重なる位置や画面の外には置けません。</p>
+      <div class="row">
+        <button class="btn" id="btnLayoutReset">初期位置に戻す</button>
+        <button class="btn" id="btnLayoutCancel">キャンセル</button>
+      </div>
+      <button class="btn primary" id="btnLayoutSave">保存</button>
+    </div>
+    <div id="edStick" class="edItem">スティック</div>
+    <div id="edBtn" class="edItem">工作</div>
   </section>
 </div>
 

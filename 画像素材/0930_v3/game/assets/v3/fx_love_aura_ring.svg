@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<defs>
+<radialGradient id="halo"><stop offset=".61" stop-color="#FF4D9A" stop-opacity="0"/><stop offset=".65" stop-color="#FF70B3" stop-opacity=".08"/><stop offset=".6875" stop-color="#FF65AD" stop-opacity=".5"/><stop offset=".72" stop-color="#FF65AD" stop-opacity=".12"/><stop offset=".82" stop-color="#FF65AD" stop-opacity="0"/></radialGradient>
+<linearGradient id="rim" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFC1DD"/><stop offset=".55" stop-color="#FF4398"/><stop offset="1" stop-color="#FF8DBD"/></linearGradient>
+</defs>
+<circle cx="256" cy="256" r="256" fill="url(#halo)"/>
+<circle cx="256" cy="256" r="176" fill="none" stroke="#E83788" stroke-opacity=".18" stroke-width="24"/>
+<circle cx="256" cy="256" r="176" fill="none" stroke="url(#rim)" stroke-width="7"/>
+<circle cx="256" cy="256" r="176" fill="none" stroke="#FFF0F7" stroke-opacity=".9" stroke-width="1.5"/>
+<circle cx="256" cy="256" r="160" fill="none" stroke="#FF81B8" stroke-opacity=".27" stroke-width="2" stroke-dasharray="5 19"/>
+<path d="M113 146 l4 -11 4 11 11 4 -11 4 -4 11 -4 -11 -11 -4Z M388 343 l3 -8 3 8 8 3 -8 3 -3 8 -3 -8 -8 -3Z" fill="#FFE0EF"/>
+</svg>

@@ -44,7 +44,7 @@ def js(page, src, arg=None):
 
 def main():
     with sync_playwright() as pw:
-        b = pw.chromium.launch()
+        b = pw.chromium.launch(executable_path=os.environ.get('PLAYWRIGHT_CHROMIUM_EXECUTABLE') or None)
         page = b.new_page(viewport={'width': 400, 'height': 800})
         errors = []
         page.on('pageerror', lambda e: errors.append('pageerror: ' + str(e)))

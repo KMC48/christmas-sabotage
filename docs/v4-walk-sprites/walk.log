@@ -1,0 +1,3 @@
+PASS: six PNGs, exact sizes, alpha, common height and bottom baseline
+PASS: 48 actual draw checks at desktop/mobile viewports; 8 fallback checks; no JS errors
+Screenshots: /workspace/scratch/a1286a7fc054/qa

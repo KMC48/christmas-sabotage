@@ -44,7 +44,7 @@ def main():
     server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), functools.partial(Handler, directory=str(GAME)))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     url = f'http://127.0.0.1:{server.server_port}/index.html'
-    source = (GAME / 'game.js').read_text()
+    source = (GAME / 'game.js').read_text(encoding='utf-8')
     source = source.replace('window.XMAS = {', 'window.__walkQA = {drawWalker, drawGuard, drawCouple, drawMob, ctx, TRIM}; window.XMAS = {', 1)
     results = []
     try:
@@ -145,7 +145,7 @@ def main():
             browser.close()
     finally:
         server.shutdown()
-    (OUT / 'walk-checks.json').write_text(json.dumps({'bounds': BOUNDS, 'draw_checks': results}, indent=2))
+    (OUT / 'walk-checks.json').write_text(json.dumps({'bounds': BOUNDS, 'draw_checks': results}, indent=2), encoding='utf-8')
     print('Screenshots:', OUT)
 
 

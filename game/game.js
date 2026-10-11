@@ -810,8 +810,22 @@
     function stopBgm() { if (timer) { clearInterval(timer); timer = null; } }
   })();
 
+  /* アプリ版（Capacitor）では Haptics プラグイン。WebView は navigator.vibrate が効かないことがある */
+  const nativeHap = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
+    && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics;
   function haptic(pattern) {
-    if (!save.hap || !navigator.vibrate) return;
+    if (!save.hap) return;
+    if (nativeHap) {
+      // [振動, 休み, 振動, …] を順に鳴らす
+      const seq = Array.isArray(pattern) ? pattern : [pattern];
+      let at = 0;
+      seq.forEach((ms, i) => {
+        if (i % 2 === 0) setTimeout(() => { nativeHap.vibrate({ duration: ms }).catch(() => {}); }, at);
+        at += ms;
+      });
+      return;
+    }
+    if (!navigator.vibrate) return;
     try { navigator.vibrate(pattern); } catch (e) { /* 非対応端末では無視 */ }
   }
 

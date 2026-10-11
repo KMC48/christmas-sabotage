@@ -1,0 +1,19 @@
+{
+  "appId": "com.kmc48.christmassabotage",
+  "appName": "クリスマス粉砕大作戦",
+  "webDir": "www",
+  "backgroundColor": "#0A0E1C",
+  "android": {
+    "backgroundColor": "#0A0E1C"
+  },
+  "ios": {
+    "backgroundColor": "#0A0E1C"
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "DARK",
+      "initialViewportFitValueHint": "cover"
+    }
+  }
+}

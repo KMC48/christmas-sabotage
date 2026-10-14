@@ -8,14 +8,14 @@ if (keystorePropsFile.exists()) {
 }
 
 android {
-    namespace = "com.kmc48.christmassabotage"
+    namespace = "jp.kmccreativelab.christmassabotage"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.kmc48.christmassabotage"
+        applicationId "jp.kmccreativelab.christmassabotage"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

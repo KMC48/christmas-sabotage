@@ -19,10 +19,10 @@
 
 アプリの設定値：
 
-- アプリID：`com.kmc48.christmassabotage`（**仮**。Google Playに一度上げると変えられない。決まったら `capacitor.config.json` と `android/app/build.gradle` を変える）
+- アプリID：`jp.kmccreativelab.christmassabotage`（2026-10-15確定。iOSのBundle IDと同じ。Google Playに一度上げると変えられない）
 - 表示名：クリスマス粉砕大作戦
 - 対応OS：Android 7.0（API 24）以上、targetSdk 36
-- バージョン：versionName 1.0 / versionCode 1
+- バージョン：versionName 1.0.0 / versionCode 1（iOSの Version 1.0.0 / Build 1 とそろえる）
 - 権限：INTERNET（Capacitorの標準）、VIBRATE（振動）
 
 ## 2. Windowsでビルドするときの注意
@@ -68,7 +68,7 @@ cd android
 | # | やること | 補足 |
 |---|---|---|
 | P1 | Google Play Consoleのデベロッパー登録（登録料は一度だけ） | 本人確認に数日かかることがある |
-| P2 | アプリIDを決める | 第1章の「仮」を確定させる |
+| P2 | ~~アプリIDを決める~~ | 2026-10-15に `jp.kmccreativelab.christmassabotage` で確定済み |
 | P3 | **アップロード鍵を作る**（下記） | 鍵とパスワードを失うと更新を出せなくなる。必ず別の場所にもバックアップする |
 | P4 | プライバシーポリシーのURL | 必須。GitHub Pagesに置いてよい |
 | P5 | ストアの掲載情報：説明文、アイコン512×512、フィーチャーグラフィック1024×500、スクリーンショット | サイズはPlay Consoleの最新の要件で確認する |

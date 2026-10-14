@@ -89,8 +89,8 @@ v4 の改修（全イルミ工作でクリア・時間延長のトナカイ・�
 - [ ] `prop_reindeer.png`（最優先。時間延長の目印になる）
 - [ ] `prop_bluetree.png`（特別ステージの主役）
 - [ ] `prop_gift.png` / `prop_snowman.png`
-- [ ] `npc_couple_walk_side.png` / `_front` / `_back`
-- [ ] `npc_guard_walk_side.png` / `_front` / `_back`
+- [x] `npc_couple_walk_side.png` / `_front` / `_back`（2026-10-10納品）
+- [x] `npc_guard_walk_side.png` / `_front` / `_back`（2026-10-10納品）
 - [ ] `player_agent_back.png`
 - [ ] `story_revival.jpg` / `result_special_clear.jpg`
 - [ ] `bg_stage6.jpg`（任意）

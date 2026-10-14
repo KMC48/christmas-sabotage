@@ -13,11 +13,11 @@
 | 起動画面 | `Splash.imageset` の3ファイルを、ゲームの背景色 `#0A0E1C` の無地 2732×2732 に置き換え。`LaunchScreen.storyboard` の背景色も `#0A0E1C` に（白い画面が出ないように） |
 | Info.plist | `ITSAppUsesNonExemptEncryption = false` を追加。対応する向きを Portrait のみに（iPhone・iPad の両方のキー） |
 | Xcodeの設定 | `MARKETING_VERSION = 1.0.0`、`CURRENT_PROJECT_VERSION = 1`、`TARGETED_DEVICE_FAMILY = 1`（iPhoneのみ）。表示名は `capacitor.config.json` の「クリスマス粉砕大作戦」が `CFBundleDisplayName` に入っている |
-| Bundle ID | `com.kmc48.christmassabotage`（**仮**。Androidと同じ値。生成時の値のまま） |
+| Bundle ID | `jp.kmccreativelab.christmassabotage`（2026-10-15 確定。Xcode の `PRODUCT_BUNDLE_IDENTIFIER` と `capacitor.config.json` の `appId`） |
 | 最低iOS | 15.0（Capacitor 8 の既定） |
 | `package.json` | scripts に `sync:ios`、`open:ios` を追加 |
 
-`game/` と `android/` は変更していません。
+`android/` は変更していません。`game/` はタイトル画面の説明文（`#titleLead`）だけをユーザーの指示で変更しました。
 
 ## 2. 実行したコマンド
 
@@ -64,8 +64,8 @@ xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
 ## 4. 残り・既知の問題
 
 - **起動直後の約6秒の暗い画面**：`game/index.html` が Google Fonts を読み込んでいるためと考えられる。通信がない場合の時間は未確認。フォントの同梱（07指示書の G1）で解消する見込み。今回の決定事項により同梱はしていない。
-- **Bundle ID は仮**：App Store Connect に登録すると変えられない。確定したら Xcode の `PRODUCT_BUNDLE_IDENTIFIER`（Debug・Release の両方）と `capacitor.config.json` の `appId` を変える。Android 側（`android/app/build.gradle`）とそろえるかは別途決める。
-  - iOS の Bundle ID は英数字・ハイフン・ドットが使える。Android のアプリIDはハイフンが使えない（英数字・アンダースコア）。両方でそろえるなら区切りなし（例：`christmassabotage`）にする。
+- **Android のアプリIDがまだ古い**：Bundle ID を `jp.kmccreativelab.christmassabotage` に確定し、iOS と `capacitor.config.json` は変更済み。`android/app/build.gradle` の `namespace` と `applicationId` は `com.kmc48.christmassabotage` のまま（この作業では `android/` を変更しない決まりのため）。Windows 側でそろえる。
+  - iOS の Bundle ID はハイフンが使えるが、Android のアプリIDは使えないため、区切りなしにした。
 - 実機での確認（音、マナーモード、振動、記録の保存、中断と復帰、機内モード）は 07指示書の第4章に沿って行う。
 
 ## 5. この後の操作（Xcode）

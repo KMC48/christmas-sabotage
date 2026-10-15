@@ -438,6 +438,17 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
     </div>
   </section>
 
+  <!-- Android の戻る操作で開く終了確認 -->
+  <section id="ovExit" class="ov" role="dialog" aria-modal="true" aria-labelledby="exitHeading">
+    <div class="pad">
+      <div class="eyebrow">EXIT</div>
+      <h2 id="exitHeading">アプリを終了しますか？</h2>
+      <p>記録と設定は保存されています。</p>
+      <button class="btn primary" id="btnExitCancel">キャンセル</button>
+      <button class="btn ghost" id="btnExitConfirm">終了する</button>
+    </div>
+  </section>
+
   <!-- ステージ選択 -->
   <section id="ovSelect" class="ov">
     <div class="pad">

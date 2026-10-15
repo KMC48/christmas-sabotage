@@ -1,6 +1,6 @@
 # クリスマス粉砕大作戦　iOSアプリ化
 
-2026-10-15　作業ブランチ：`ios/project`（作成元：`feat/android-app` 890e44c。現在は 0c8a84a をマージ済み）
+2026-10-15　作業ブランチ：`ios/project`（作成元：`feat/android-app` 890e44c。現在は 0c8a84a と、追加のAndroid戻る操作 9f7f07e をマージ済み）
 
 最新の統合検証・PRの統合順序は [native-integration.md](../native-integration.md) を参照。以下のSimulator記録は統合前の実施結果です。
 
@@ -19,7 +19,7 @@
 | 最低iOS | 15.0（Capacitor 8 の既定） |
 | `package.json` | scripts に `sync:ios`、`open:ios` を追加 |
 
-初回のiOS実装では `android/` は変更していません。今回の統合でPR #2のAndroidアプリID統一とローカルフォントを取り込みました。タイトル説明文、iOSの縦固定・iPhone専用設定・暗色起動画面・Haptics・SPM構成は維持しています。
+初回のiOS実装では `android/` は変更していません。今回の統合でPR #2のAndroidアプリID統一とローカルフォントを取り込みました。タイトル説明文、iOSの縦固定・iPhone専用設定・暗色起動画面・Haptics・SPM構成は維持しています。追加依存 `@capacitor/app@8.1.2` もSPMへ同期済みですが、Android戻る操作のリスナーはiOSでは登録しません。
 
 ## 2. 実行したコマンド
 

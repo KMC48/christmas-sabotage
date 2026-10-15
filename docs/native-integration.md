@@ -2,7 +2,7 @@
 
 ## 統合内容
 
-PR #3の `ios/project` にPR #2の `0c8a84a486ab8a8fe45253d7b55379f8c044f6ce` をマージ。元のiOS履歴 `616560448bf41fd0e81c9b67f7548c33b5fb94c4` も親として保持。
+PR #3の `ios/project` にPR #2の `0c8a84a486ab8a8fe45253d7b55379f8c044f6ce` をマージ。元のiOS履歴 `616560448bf41fd0e81c9b67f7548c33b5fb94c4` も親として保持。作業中にPR #2へ追加された `9f7f07e07272076310b190969e747f55f590be7b`（Android戻る操作）も追加マージ。`@capacitor/app@8.1.2` を含む依存とiOSのSPM定義を同期。
 
 - Android namespace/applicationId、MainActivityのパッケージ、文字列リソース、iOS Bundle ID、Capacitor appId：`jp.kmccreativelab.christmassabotage`。
 - 5点のWOFF2（427,736 bytes）と3点のOFLライセンスを両OSへ同梱。Google Fontsの外部参照なし。
@@ -20,6 +20,7 @@ python -m pip install playwright==1.64.0 Pillow fonttools brotli
 python -m playwright install --with-deps chromium
 python scripts/subset_fonts.py --check
 python game/tests/run_tests.py
+python game/tests/test_android_back.py
 python game/tests/test_walk_sprites.py
 python game/tests/test_packaged_offline.py
 ```
@@ -36,10 +37,10 @@ python game/tests/test_packaged_offline.py
 
 Linux / Chromium 153.0.8010.0 / Playwright 1.64.0で実施。
 
-- 既存回帰テスト：94 PASS / 0 FAIL。
+- 既存回帰テスト：94 PASS / 0 FAIL。Android戻る操作の追加テスト：19 PASS。
 - 歩行画像：6点の寸法・透過検証、描画48ケース、代用表示8ケース PASS。
 - 外部通信遮断：キャッシュなしの3回すべてでタイトル・5フォント・STAGE 1を確認。外部リクエスト0、JSエラー0、予期しない素材エラー0。日本語ラベルが実際に同梱Noto Sans JPの字形で描画されたこともCDPで確認。
-- Webタイトル描画可能時刻：275.7 / 254.9 / 265.5 ms。全フォント読込：282.2 / 262.8 / 271.9 ms。iOSの約6秒との比較には使えない。
+- Webタイトル描画可能時刻：292.5 / 257.6 / 265.0 ms。全フォント読込：303.6 / 265.5 / 272.1 ms。iOSの約6秒との比較には使えない。
 - 既存の任意素材6点は未納品のため404（雪だるま、ギフト、青ツリー、トナカイ、主人公背面、STAGE 6背景）。ゲームは従来の代替描画を使用。本統合による欠落ではない。
 
 ## PRの統合順序
@@ -54,5 +55,5 @@ Linux / Chromium 153.0.8010.0 / Playwright 1.64.0で実施。
 
 - 統合後iOSのコールドスタート時間。以前の約6秒は統合前の観測であり、フォントが原因だったと断定しない。
 - 両OSの実機で機内モード起動、音、振動、タッチ、保存、中断復帰、全ステージ。
-- Androidの戻る操作は既存の標準動作のまま。
+- Android戻る操作はPR #2の追加実装を維持（プレイ中は一時停止、タイトルでは終了確認）。実機のボタン／ジェスチャー検証は未実施。Web/iOSではリスナーを登録しない。
 - Androidの配信用署名、iOS Team設定・実機署名・Archive／TestFlight。

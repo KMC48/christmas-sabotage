@@ -1,8 +1,6 @@
 name: Native integration validation
 
 on:
-  push:
-    branches: [ios/project]
   pull_request:
   workflow_dispatch:
 
@@ -33,6 +31,7 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - run: python scripts/subset_fonts.py --check
       - run: python game/tests/run_tests.py
+      - run: python game/tests/test_android_back.py
       - run: python game/tests/test_walk_sprites.py
       - run: python game/tests/test_packaged_offline.py
       - uses: actions/upload-artifact@v4

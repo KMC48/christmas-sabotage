@@ -14,3 +14,11 @@ game/assets/*_orig.png
 画像素材/参考写真_v4/
 /aono-dokutsu-top_41.jpg
 /*Henry-the-Moose*.jpg
+
+# アプリ化（Capacitor）
+node_modules/
+/www/
+# 署名鍵と鍵の設定（絶対にコミットしない）
+*.jks
+*.keystore
+android/keystore.properties

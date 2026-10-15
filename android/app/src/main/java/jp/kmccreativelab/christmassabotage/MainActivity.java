@@ -1,4 +1,4 @@
-package com.kmc48.christmassabotage;
+package jp.kmccreativelab.christmassabotage;
 
 import com.getcapacitor.BridgeActivity;
 

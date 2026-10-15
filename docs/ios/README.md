@@ -1,6 +1,8 @@
 # クリスマス粉砕大作戦　iOSアプリ化
 
-2026-10-15　作業ブランチ：`ios/project`（`feat/android-app` 890e44c から作成）
+2026-10-15　作業ブランチ：`ios/project`（作成元：`feat/android-app` 890e44c。現在は 0c8a84a をマージ済み）
+
+最新の統合検証・PRの統合順序は [native-integration.md](../native-integration.md) を参照。以下のSimulator記録は統合前の実施結果です。
 
 ## 1. やったこと
 
@@ -17,7 +19,7 @@
 | 最低iOS | 15.0（Capacitor 8 の既定） |
 | `package.json` | scripts に `sync:ios`、`open:ios` を追加 |
 
-`android/` は変更していません。`game/` はタイトル画面の説明文（`#titleLead`）だけをユーザーの指示で変更しました。
+初回のiOS実装では `android/` は変更していません。今回の統合でPR #2のAndroidアプリID統一とローカルフォントを取り込みました。タイトル説明文、iOSの縦固定・iPhone専用設定・暗色起動画面・Haptics・SPM構成は維持しています。
 
 ## 2. 実行したコマンド
 
@@ -63,9 +65,8 @@ xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
 
 ## 4. 残り・既知の問題
 
-- **起動直後の約6秒の暗い画面**：`game/index.html` が Google Fonts を読み込んでいるためと考えられる。通信がない場合の時間は未確認。フォントの同梱（07指示書の G1）で解消する見込み。今回の決定事項により同梱はしていない。
-- **Android のアプリIDがまだ古い**：Bundle ID を `jp.kmccreativelab.christmassabotage` に確定し、iOS と `capacitor.config.json` は変更済み。`android/app/build.gradle` の `namespace` と `applicationId` は `com.kmc48.christmassabotage` のまま（この作業では `android/` を変更しない決まりのため）。Windows 側でそろえる。
-  - iOS の Bundle ID はハイフンが使えるが、Android のアプリIDは使えないため、区切りなしにした。
+- **起動直後の約6秒の暗い画面**：統合前のSimulatorでの観測値。Google Fontsへの参照は撤去し、5点のWOFF2と3点のOFLライセンスを同梱済みです。外部フォント待ちの依存は解消しましたが、原因の特定とiOS起動時間の改善効果は未検証です。同じSimulator／実機でコールドスタートを再計測してください。
+- **アプリID**：Android・iOS・Capacitorとも `jp.kmccreativelab.christmassabotage` に統一済み。
 - 実機での確認（音、マナーモード、振動、記録の保存、中断と復帰、機内モード）は 07指示書の第4章に沿って行う。
 
 ## 5. この後の操作（Xcode）

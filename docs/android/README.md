@@ -1,6 +1,8 @@
 # クリスマス粉砕大作戦　Androidアプリ化とGoogle Play配信
 
-2026-10-11　作業ブランチ：`feat/android-app`
+初回実装：2026-10-11　作業ブランチ：`feat/android-app`
+
+2026-10-15：PR #3へ統合済み。最新の統合検証は [native-integration.md](../native-integration.md) を参照。下記のエミュレータ／ビルド記録は元ブランチでの実施結果です。
 
 ## 1. できていること（2026-10-11、Windowsで実施）
 
@@ -19,10 +21,10 @@
 
 アプリの設定値：
 
-- アプリID：`com.kmc48.christmassabotage`（**仮**。Google Playに一度上げると変えられない。決まったら `capacitor.config.json` と `android/app/build.gradle` を変える）
+- アプリID：`jp.kmccreativelab.christmassabotage`（2026-10-15確定。iOSのBundle IDと同じ。Google Playに一度上げると変えられない）
 - 表示名：クリスマス粉砕大作戦
 - 対応OS：Android 7.0（API 24）以上、targetSdk 36
-- バージョン：versionName 1.0 / versionCode 1
+- バージョン：versionName 1.0.0 / versionCode 1（iOSの Version 1.0.0 / Build 1 とそろえる）
 - 権限：INTERNET（Capacitorの標準）、VIBRATE（振動）
 
 ## 2. Windowsでビルドするときの注意
@@ -68,7 +70,7 @@ cd android
 | # | やること | 補足 |
 |---|---|---|
 | P1 | Google Play Consoleのデベロッパー登録（登録料は一度だけ） | 本人確認に数日かかることがある |
-| P2 | アプリIDを決める | 第1章の「仮」を確定させる |
+| P2 | ~~アプリIDを決める~~ | 2026-10-15に `jp.kmccreativelab.christmassabotage` で確定済み |
 | P3 | **アップロード鍵を作る**（下記） | 鍵とパスワードを失うと更新を出せなくなる。必ず別の場所にもバックアップする |
 | P4 | プライバシーポリシーのURL | 必須。GitHub Pagesに置いてよい |
 | P5 | ストアの掲載情報：説明文、アイコン512×512、フィーチャーグラフィック1024×500、スクリーンショット | サイズはPlay Consoleの最新の要件で確認する |
@@ -98,7 +100,7 @@ keyPassword=（設定したパスワード）
 
 ## 5. iOS版と共通の残り作業
 
-- **フォントの同梱**：`index.html` がGoogle Fontsを読み込んでいます。通信がないと、別のフォントで表示されます（ゲーム自体は動きます）。フォントファイルを同梱して `@font-face` で参照する作業が残っています。07の指示書のG1と同じです。
+- **フォントの同梱**：2026-10-15に対応済み。`game/fonts/` に、ゲームで使う文字だけを含むフォント（woff2、合計約420KB、OFLライセンス）を置き、Google Fontsは読まない。ゲームの文章を変えたら `python scripts/subset_fonts.py --check` で確認し、足りなければ `python scripts/subset_fonts.py` で作り直す（要 `pip install fonttools brotli`）。
 - **画像の権利確認**：AI生成の画像（ChatGPT／Gemini）を使っているため、生成サービスの規約で商用配信ができるか確認してください。
 - **残り素材8点**：届く前に出すか、届いてから出すかを決めてください。
 - アップデートのたびに、`versionCode` を1つ増やしてください。
@@ -117,7 +119,7 @@ keyPassword=（設定したパスワード）
 | Capacitorとの連携 | 有効（platform = android） |
 | 振動（Haptics）の呼び出し | 成功（エミュレータなので、実際の振動は体感していない） |
 | 記録の保存（localStorage） | 書き込み・読み出しできた |
-| 通信なしでの起動 | 起動し、画像も表示された。**タイトルのロゴ書体などは端末の標準フォントになる**（第5章のフォント同梱が未対応のため） |
+| 通信なしでの起動 | 起動し、画像も表示された。10/15のフォント同梱後は、ロゴ書体も含めて通信ありと同じ表示（外部への通信なし） |
 
 - **実機（Androidスマホ）での確認は未実施です。** 音、実際の振動、タッチ操作の感触、戻るボタン、全ステージの通しプレイは、実機で確認してください。
 - 戻るボタンは、Capacitorの標準どおりアプリを閉じます。ゲーム中は一時停止にしたい場合は、追加の対応が必要です。

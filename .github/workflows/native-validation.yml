@@ -1,0 +1,95 @@
+name: Native integration validation
+
+on:
+  push:
+    branches: [ios/project]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: npm run sync
+      - run: node scripts/verify-native-assets.mjs
+      - run: python -m pip install playwright==1.64.0 Pillow fonttools brotli
+      - run: python -m playwright install --with-deps chromium
+      - run: python scripts/subset_fonts.py --check
+      - run: python game/tests/run_tests.py
+      - run: python game/tests/test_walk_sprites.py
+      - run: python game/tests/test_packaged_offline.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-offline-qa
+          path: /tmp/xmas-native-qa/
+          if-no-files-found: warn
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+      - run: npm ci
+      - run: npm run build:www && npx cap sync android
+      - run: bash gradlew assembleDebug bundleRelease --no-daemon
+        working-directory: android
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-and-unsigned-release
+          path: |
+            android/app/build/outputs/apk/debug/*.apk
+            android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run sync:ios
+      - run: xcodebuild -version
+      - name: Build iOS Simulator app without signing
+        run: >-
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug
+          -sdk iphonesimulator -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath ios/DerivedData CODE_SIGNING_ALLOWED=NO build
+      - run: ditto -c -k --sequesterRsrc --keepParent ios/DerivedData/Build/Products/Debug-iphonesimulator/App.app ios-simulator.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-unsigned
+          path: ios-simulator.zip
+          if-no-files-found: error

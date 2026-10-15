@@ -3030,13 +3030,25 @@
   }
 
   /* ---------- 画面遷移 ---------- */
-  const OVS = ['ovTitle', 'ovSelect', 'ovResult', 'ovFail', 'ovPause', 'ovSettings', 'ovLayout', 'ovEnding'];
+  const OVS = ['ovTitle', 'ovSelect', 'ovResult', 'ovFail', 'ovPause', 'ovSettings', 'ovLayout', 'ovEnding', 'ovExit'];
   function showOv(id) {
     OVS.forEach((o) => $(o).classList.toggle('on', o === id));
     ui.hud.classList.toggle('hide', !!id);
     if (id) { hint(''); releaseAll(); }
   }
   function hideOv() { OVS.forEach((o) => $(o).classList.remove('on')); ui.hud.classList.remove('hide'); }
+
+  function showTitle() {
+    ++startToken;
+    Audio2.stopBgm();
+    G.stage = null; G.state = 'title';
+    showOv('ovTitle');
+  }
+  function showSelect() {
+    G.state = 'select';
+    buildStageList();
+    showOv('ovSelect');
+  }
 
   function startStage(idx) {
     Audio2.unlock();
@@ -3334,9 +3346,7 @@
   });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      releaseAll();
-      if (G.state === 'playing') doPause();
-      else Audio2.stopBgm();
+      pauseForBackground();
     } else {
       last = 0;   // 復帰直後に大きなdtで一気に進めない
     }
@@ -3392,6 +3402,7 @@
   /* ----- 位置の調整（編集画面でだけ動かせる。ゲーム中のドラッグでは配置は変わらない） ----- */
   const editor = { pos: null, id: null, which: null, grabX: 0, grabY: 0 };
   function openLayoutEditor() {
+    editor.id = null; editor.which = null;
     const sr = safeRect();
     ctl.safe = sr;
     editor.pos = fitLayout(layoutFrom(save.controls, sr), sr, null);
@@ -3442,25 +3453,105 @@
     drawEditor();
   }
 
+  function cancelLayout() {
+    editor.id = null; editor.which = null; editor.pos = null;
+    showOv('ovSettings');
+  }
+
+  /* Android back is UI navigation, never WebView history navigation. */
+  let androidApp = null;
+  let lastAndroidBack = -Infinity;
+  let exitPending = false;
+  function handleAndroidBack() {
+    const now = performance.now();
+    if (exitPending || now - lastAndroidBack < 300) return;
+    lastAndroidBack = now;
+    releaseAll();
+    // Overlays take precedence: settings/ending replays can retain the previous G.state.
+    const visible = OVS.find((id) => $(id).classList.contains('on'));
+    switch (visible) {
+      case 'ovExit': showOv('ovTitle'); return;
+      case 'ovLayout': cancelLayout(); return;
+      case 'ovSettings': showOv(settingsBack); return;
+      case 'ovEnding': finishEnding(); return;
+      case 'ovPause': resumePlay(); return;
+      case 'ovResult': case 'ovFail': showSelect(); return;
+      case 'ovSelect': showTitle(); return;
+      case 'ovTitle':
+        showOv('ovExit');
+        $('btnExitCancel').focus();
+        return;
+    }
+    if (G.state === 'playing' || G.state === 'ready') doPause();
+    else if (G.state === 'finishing') showResult();
+    else if (G.state === 'failing') showFail();
+    // Unknown/transitional states consume Back without exiting or discarding the run.
+  }
+  function pauseForBackground() {
+    releaseAll();
+    if (G.state === 'playing' || G.state === 'ready') doPause();
+    else Audio2.stopBgm();
+  }
+  async function exitAndroidApp() {
+    if (!androidApp || exitPending || !$('ovExit').classList.contains('on')) return;
+    exitPending = true;
+    $('btnExitConfirm').disabled = true;
+    putSave();
+    try { await androidApp.exitApp(); }
+    catch (err) { console.warn('Android app exit failed', err); }
+    finally {
+      exitPending = false;
+      $('btnExitConfirm').disabled = false;
+      showOv('ovTitle');
+    }
+  }
+  function initAndroidNavigation() {
+    const cap = window.Capacitor;
+    if (!cap || !cap.isNativePlatform || !cap.isNativePlatform()
+        || !cap.getPlatform || cap.getPlatform() !== 'android') return;
+    androidApp = cap.Plugins && cap.Plugins.App;
+    if (!androidApp) return;
+    // The native bridge exposes the installed App plugin for this unbundled script.
+    // Listeners live for this document's lifetime; boot registers them only once.
+    const listen = (event, fn) => {
+      try {
+        Promise.resolve(androidApp.addListener(event, fn)).catch((err) =>
+          console.warn('Android navigation listener failed: ' + event, err));
+      } catch (err) { console.warn('Android navigation listener failed: ' + event, err); }
+    };
+    listen('backButton', handleAndroidBack);
+    listen('pause', pauseForBackground);
+    listen('resume', () => { last = 0; });
+  }
+
   /* ---------- ボタン結線 ---------- */
   function on(id, fn) { $(id).addEventListener('click', () => { Audio2.se.ui(); fn(); }); }
   function doPause() {
-    if (G.state !== 'playing') return;
+    if (G.state !== 'playing' && G.state !== 'ready') return;
+    ++startToken; // Invalidate the pending stage-intro timer, including background pauses.
     G.state = 'pause'; Audio2.duck(true); showOv('ovPause');
+  }
+  function resumePlay() {
+    if (G.state !== 'pause') return;
+    releaseAll(); last = 0;
+    hideOv(); applyLayout(); G.state = 'playing'; Audio2.duck(false);
+    Audio2.startBgm();
   }
   function wireUI() {
     on('btnStart', () => startStage(0));
-    on('btnSelect', () => { buildStageList(); showOv('ovSelect'); });
-    on('btnSelBack', () => showOv('ovTitle'));
+    on('btnSelect', showSelect);
+    on('btnSelBack', showTitle);
     on('btnSettings', () => { settingsBack = 'ovTitle'; refreshControlUI(); showOv('ovSettings'); });
     on('btnSettings2', () => { settingsBack = 'ovPause'; refreshControlUI(); showOv('ovSettings'); });
     on('btnSetBack', () => showOv(settingsBack));
     on('btnPause', doPause);
-    on('btnResume', () => { hideOv(); applyLayout(); G.state = 'playing'; Audio2.duck(false); });
+    on('btnResume', resumePlay);
     on('btnRetry', retry); on('btnRetry2', retry); on('btnRetry3', retry);
-    on('btnQuit', () => { Audio2.stopBgm(); G.stage = null; G.state = 'title'; showOv('ovTitle'); });
-    on('btnSelect2', () => { buildStageList(); showOv('ovSelect'); });
-    on('btnSelect3', () => { buildStageList(); showOv('ovSelect'); });
+    on('btnQuit', showTitle);
+    on('btnSelect2', showSelect);
+    on('btnSelect3', showSelect);
+    on('btnExitCancel', () => showOv('ovTitle'));
+    on('btnExitConfirm', exitAndroidApp);
     on('btnNext', () => startStage(Math.min(G.stageIdx + 1, NORMAL.length - 1)));
     on('btnEnding', () => startEnding(true, 'ovResult'));
     on('btnWipe', () => {
@@ -3475,7 +3566,7 @@
       b.addEventListener('click', () => { Audio2.se.ui(); setPreset(b.dataset.preset); }));
     on('btnLayout', openLayoutEditor);
     on('btnLayoutSave', saveLayout);
-    on('btnLayoutCancel', () => showOv('ovSettings'));
+    on('btnLayoutCancel', cancelLayout);
     on('btnLayoutReset', resetLayoutInEditor);
     const ed = $('ovLayout');
     ed.addEventListener('pointerdown', editorDown);
@@ -3602,6 +3693,7 @@
     buildStageList();
     refreshControlUI();
     updateTitleBadge();
+    initAndroidNavigation();
     window.addEventListener('resize', resize);
     window.addEventListener('orientationchange', () => setTimeout(resize, 120));
     requestAnimationFrame(loop);

@@ -6,13 +6,16 @@
   "scripts": {
     "build:www": "node scripts/build-www.mjs",
     "sync": "npm run build:www && npx cap sync",
-    "android:debug": "npm run sync && cd android && gradlew assembleDebug"
+    "android:debug": "npm run sync && cd android && gradlew assembleDebug",
+    "sync:ios": "node scripts/build-www.mjs && npx cap sync ios",
+    "open:ios": "npx cap open ios"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.3",
     "@capacitor/app": "8.1.2",
     "@capacitor/core": "^8.5.3",
-    "@capacitor/haptics": "^8.0.2"
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "8.5.3"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.3"

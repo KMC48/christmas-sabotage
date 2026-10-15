@@ -6,7 +6,7 @@ PR #3の `ios/project` にPR #2の `0c8a84a486ab8a8fe45253d7b55379f8c044f6ce` �
 
 - Android namespace/applicationId、MainActivityのパッケージ、文字列リソース、iOS Bundle ID、Capacitor appId：`jp.kmccreativelab.christmassabotage`。
 - 5点のWOFF2（427,736 bytes）と3点のOFLライセンスを両OSへ同梱。Google Fontsの外部参照なし。
-- タイトル説明文は両ブランチで一致していた最新の3行を維持。
+- タイトル説明文は両ブランチで一致していた最新の3行を維持。HUD用フォントの日本語フォールバックに同梱Noto Sans JPを明示し、端末フォントがなくてもラベルを表示。
 - iOSの縦画面、iPhone専用、Version 1.0.0 / Build 1、最低iOS 15、暗色起動画面、暗号化申告、SPM・Hapticsを維持。
 - Androidの縦画面、暗色起動画面、署名設定、出力先変更機能を維持。
 
@@ -30,7 +30,17 @@ python game/tests/test_packaged_offline.py
 
 今回の作業環境はLinux、JDK 17、Android SDK／Xcodeなし。ローカルのGradle実行は配布物取得時の `Network is unreachable` で停止。ネイティブビルドはGitHub Actions側で検証する。
 
-外部通信遮断テストは、キャッシュなしのChromiumでローカル配信のアプリ同梱Web素材を表示する。タイトル画像、5フォントのロード、STAGE 1、外部リクエスト0件、JS／素材エラー0件を検査。`web-timings.json` の値はナビゲーション開始からWebタイトルが描画可能になるまでの計測であり、端末のネイティブ起動時間ではない。
+外部通信遮断テストは、キャッシュなしのChromiumでローカル配信のアプリ同梱Web素材を表示する。タイトル画像、5フォントのロード、STAGE 1、外部リクエスト0件、JSエラー0件・予期しない素材エラー0件を検査。既存の任意素材6点の404は別途記録し、未納品時の代替描画を維持する。`web-timings.json` の値はナビゲーション開始からWebタイトルが描画可能になるまでの計測であり、端末のネイティブ起動時間ではない。
+
+### ローカル実行結果
+
+Linux / Chromium 153.0.8010.0 / Playwright 1.64.0で実施。
+
+- 既存回帰テスト：94 PASS / 0 FAIL。
+- 歩行画像：6点の寸法・透過検証、描画48ケース、代用表示8ケース PASS。
+- 外部通信遮断：キャッシュなしの3回すべてでタイトル・5フォント・STAGE 1を確認。外部リクエスト0、JSエラー0、予期しない素材エラー0。日本語ラベルが実際に同梱Noto Sans JPの字形で描画されたこともCDPで確認。
+- Webタイトル描画可能時刻：275.7 / 254.9 / 265.5 ms。全フォント読込：282.2 / 262.8 / 271.9 ms。iOSの約6秒との比較には使えない。
+- 既存の任意素材6点は未納品のため404（雪だるま、ギフト、青ツリー、トナカイ、主人公背面、STAGE 6背景）。ゲームは従来の代替描画を使用。本統合による欠落ではない。
 
 ## PRの統合順序
 

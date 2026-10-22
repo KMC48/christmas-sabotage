@@ -63,9 +63,20 @@ xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
 
 **iPhone実機での確認は未実施です。**
 
+### 統合後の再ビルド（2026-10-22、`ios/project` 678d2e9）
+
+| 確認項目 | 結果 |
+|---|---|
+| `npm ci` → `npm run sync` → `node scripts/verify-native-assets.mjs` | PASS（56ファイルが両OSでバイト一致、ID・タイトル文・フォント5点・ライセンス3点） |
+| Simulator向け Debug ビルド（署名なし） | BUILD SUCCEEDED |
+| 実機向け Release ビルド（`-sdk iphoneos`、署名なし） | BUILD SUCCEEDED（Archive 前のコンパイル確認。署名・Archive は未実施） |
+| アプリ内の同梱フォント | `App.app/public/fonts/` に WOFF2 5点・OFL 3点 |
+| コールドスタート（iPhone 17 Simulator、WebKitログの firstMeaningfulPaint） | 2.52秒 / 2.65秒（統合前は 6.37秒）。Simulatorでの値で、実機は未計測 |
+| タイトル画面・STAGE 1 開始 | 表示・開始できた。タイトル文は3行、ロゴは同梱フォントで表示 |
+
 ## 4. 残り・既知の問題
 
-- **起動直後の約6秒の暗い画面**：統合前のSimulatorでの観測値。Google Fontsへの参照は撤去し、5点のWOFF2と3点のOFLライセンスを同梱済みです。外部フォント待ちの依存は解消しましたが、原因の特定とiOS起動時間の改善効果は未検証です。同じSimulator／実機でコールドスタートを再計測してください。
+- **起動直後の暗い画面**：統合前は約6秒（Simulator）。フォント同梱後の同じSimulatorでは約2.5秒に短縮（上記）。実機での時間は未計測。
 - **アプリID**：Android・iOS・Capacitorとも `jp.kmccreativelab.christmassabotage` に統一済み。
 - 実機での確認（音、マナーモード、振動、記録の保存、中断と復帰、機内モード）は 07指示書の第4章に沿って行う。
 

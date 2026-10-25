@@ -1,0 +1,570 @@
+{
+  "bounds": {
+    "npc_guard_walk_side": [
+      103,
+      4,
+      306,
+      508
+    ],
+    "npc_guard_walk_front": [
+      145,
+      4,
+      221,
+      508
+    ],
+    "npc_guard_walk_back": [
+      151,
+      4,
+      210,
+      508
+    ],
+    "npc_couple_walk_side": [
+      131,
+      4,
+      377,
+      508
+    ],
+    "npc_couple_walk_front": [
+      164,
+      4,
+      311,
+      508
+    ],
+    "npc_couple_walk_back": [
+      165,
+      4,
+      309,
+      508
+    ]
+  },
+  "draw_checks": [
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "guard",
+      "direction": "right",
+      "step": 0,
+      "foot": 150.0,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "guard",
+      "direction": "right",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "guard",
+      "direction": "left",
+      "step": 0,
+      "foot": 150.0,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "guard",
+      "direction": "left",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "guard",
+      "direction": "front",
+      "step": 0,
+      "foot": 150.0,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "guard",
+      "direction": "front",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "guard",
+      "direction": "back",
+      "step": 0,
+      "foot": 150.0,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "guard",
+      "direction": "back",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "guard",
+      "direction": "front-left",
+      "step": 0,
+      "foot": 150.0,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "guard",
+      "direction": "front-left",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "guard",
+      "direction": "back-left",
+      "step": 0,
+      "foot": 150.0,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "guard",
+      "direction": "back-left",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "couple",
+      "direction": "right",
+      "step": 0,
+      "foot": 150.0,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "couple",
+      "direction": "right",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "couple",
+      "direction": "left",
+      "step": 0,
+      "foot": 150.0,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "couple",
+      "direction": "left",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "couple",
+      "direction": "front",
+      "step": 0,
+      "foot": 150.0,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "couple",
+      "direction": "front",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "couple",
+      "direction": "back",
+      "step": 0,
+      "foot": 150.0,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "couple",
+      "direction": "back",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "couple",
+      "direction": "front-left",
+      "step": 0,
+      "foot": 150.0,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "couple",
+      "direction": "front-left",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "couple",
+      "direction": "back-left",
+      "step": 0,
+      "foot": 150.0,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "kind": "couple",
+      "direction": "back-left",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "guard",
+      "direction": "right",
+      "step": 0,
+      "foot": 150.0,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "guard",
+      "direction": "right",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "guard",
+      "direction": "left",
+      "step": 0,
+      "foot": 150.0,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "guard",
+      "direction": "left",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "guard",
+      "direction": "front",
+      "step": 0,
+      "foot": 150.0,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "guard",
+      "direction": "front",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "guard",
+      "direction": "back",
+      "step": 0,
+      "foot": 150.0,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "guard",
+      "direction": "back",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "guard",
+      "direction": "front-left",
+      "step": 0,
+      "foot": 150.0,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "guard",
+      "direction": "front-left",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "guard",
+      "direction": "back-left",
+      "step": 0,
+      "foot": 150.0,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "guard",
+      "direction": "back-left",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 62
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "couple",
+      "direction": "right",
+      "step": 0,
+      "foot": 150.0,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "couple",
+      "direction": "right",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "couple",
+      "direction": "left",
+      "step": 0,
+      "foot": 150.0,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "couple",
+      "direction": "left",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "couple",
+      "direction": "front",
+      "step": 0,
+      "foot": 150.0,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "couple",
+      "direction": "front",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "couple",
+      "direction": "back",
+      "step": 0,
+      "foot": 150.0,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "couple",
+      "direction": "back",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "couple",
+      "direction": "front-left",
+      "step": 0,
+      "foot": 150.0,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "couple",
+      "direction": "front-left",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "couple",
+      "direction": "back-left",
+      "step": 0,
+      "foot": 150.0,
+      "height": 66
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "couple",
+      "direction": "back-left",
+      "step": 1.5707963267948966,
+      "foot": 147.8,
+      "height": 66
+    }
+  ]
+}

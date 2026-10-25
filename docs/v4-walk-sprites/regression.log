@@ -1,0 +1,140 @@
+
+A01 起動前／受付前／ジャスト中の工作
+  [PASS] A01a 起動前の工作 → 先回り成功（落胆）・ジャストなし  -> {'outcome': 'pre', 'mood': 'dejected', 'bonus': 0, 'just': 0, 'phase': 'resolved'}
+  [PASS] A01b 受付前の工作 → 通常成功（落胆）・ジャストなし  -> {'outcome': 'normal', 'mood': 'dejected', 'bonus': 0, 'just': 0, 'phase': 'resolved'}
+  [PASS] A01c ジャスト中の工作 → 悲嘆・+500を1回  -> {'outcome': 'just', 'mood': 'heartbroken', 'bonus': 500, 'just': 1, 'phase': 'resolved'}
+  [PASS] A01d 結末は確定したまま（resolved）
+
+A02 境界（完了時刻で判定・FPSに依存しない）
+  [PASS] A02a t=2.0 ちょうどはジャスト（直前1.99は通常）  -> {'o199': 'normal', 'o200': 'just', 'o400': 'just', 'o401': 'missed'}
+  [PASS] A02b t=4.0 ちょうどはジャスト（直後4.01は期限切れ）  -> {'o199': 'normal', 'o200': 'just', 'o400': 'just', 'o401': 'missed'}
+  [PASS] A02c 期限内の完了は 20fps / 144fps どちらもジャスト  -> {'in20': 'just', 'in144': 'just', 'late20': 'missed', 'late144': 'missed'}
+  [PASS] A02d 期限を過ぎた完了は 20fps / 144fps どちらも期限切れ  -> {'in20': 'just', 'in144': 'just', 'late20': 'missed', 'late144': 'missed'}
+
+A03 期限切れの後に同じ灯を消す
+  [PASS] A03a 期限を過ぎると親密化で確定  -> {'outcome': 'missed', 'mood': 'lovey'}
+  [PASS] A03b 期限後の消灯でも親密なまま（巻き戻さない）
+  [PASS] A03c 期限後の消灯は通常点・通常のムード減少だけ（+500なし）  -> {'missed': {'outcome': 'missed', 'mood': 'lovey'}, 'after': {'outcome': 'missed', 'mood': 'lovey'}, 'gained': 520, 'base': 520, 'moodDrop': 11.650485436893206, 'tMood': 11.650485436893204, 'just': 0, 'lines': ['「なぜ盛り上がる」', '「……手遅れか」']}
+  [PASS] A03d 主人公の一言は「……手遅れか」  -> ['「なぜ盛り上がる」', '「……手遅れか」']
+  [PASS] A03e 親密化したカップルでも電源を落とせばオーラは消える（親密ポーズは維持）  -> {'aura': False, 'mood': 'lovey'}
+
+A04 中断・再接近・リトライ
+  [PASS] A04a 中断ではイベントの時計を巻き戻さない  -> {'cancelled': True, 'advanced': True, 'doneOnce': 1, 'justCount': 0, 'score': 520}
+  [PASS] A04b 同じ対象を2回呼んでも確定は1回  -> {'cancelled': True, 'advanced': True, 'doneOnce': 1, 'justCount': 0, 'score': 520}
+  [PASS] A04c リトライで前のプレイの一言・反応・結末を持ち越さない  -> {'pendingBefore': 1, 'lines': 0, 'just': 0, 'phase': 'idle', 'mood': None, 'aura': True, 'card': False}
+
+A05 オーラの電源対応
+  [PASS] A05a 別の照明では消えない
+  [PASS] A05b 電源への工作を中断しても消えない  -> {'afterOther': True, 'started': True, 'afterCancel': True, 'offNow': False, 'crossed': True}
+  [PASS] A05c 電源の工作完了と同じ更新で衝突が消え、そのまま通り抜けられる  -> {'afterOther': True, 'started': True, 'afterCancel': True, 'offNow': False, 'crossed': True}
+
+A06 見える輪と当たり判定
+  [PASS] A06a 輪の芯の描画半径 = 衝突半径  -> {'drawnCore': 56, 'r': 56, 'd1': 68, 'below': True, 'rr': 68, 'slid': 37.8027451969341, 'd2': 67.99999999999993}
+  [PASS] A06b 1回の大きな移動でも輪を貫通しない  -> {'drawnCore': 56, 'r': 56, 'd1': 68, 'below': True, 'rr': 68, 'slid': 37.8027451969341, 'd2': 67.99999999999993}
+  [PASS] A06c 押し込むと円周に沿って滑る（中へは入らない）  -> {'drawnCore': 56, 'r': 56, 'd1': 68, 'below': True, 'rr': 68, 'slid': 37.8027451969341, 'd2': 67.99999999999993}
+
+A07 吸着と配置（外から電源に届く・行き詰まりがない）
+  [PASS] A07a 全ステージ：すべての対象に輪の外の工作位置がある  -> [(1, []), (2, []), (3, []), (4, []), (5, []), ('SP', [])]
+  [PASS] A07b 全ステージ：電源は他のオーラの内側にない（循環依存なし）
+  [PASS] A07c 全ステージ：開始地点が輪の外
+  [PASS] A07d 全ステージ：電源の工作位置は、どの方向から来ても自分の輪の外  -> [32.4, 40.1, 22.6, 28.4, 50.9, 184.4]
+  [PASS] A07e オーラ越しの対象はロックしない（吸着で貫通しない）→ 消えればロックできる  -> {'blocked': None, 'hint': True, 'freed': 0}
+
+A08 最後の工作でクリア
+  [PASS] A08a 最後のジャストも加点・反応が入る  -> {'st1': 'finishing', 'st2': 'result', 'just': 1, 'mood': 'heartbroken', 'total': 1022, 'best': 1022, 'left': 0.03333333333333334}
+  [PASS] A08b 結果の保存は1回（最終点と一致）  -> {'st1': 'finishing', 'st2': 'result', 'just': 1, 'mood': 'heartbroken', 'total': 1022, 'best': 1022, 'left': 0.03333333333333334}
+  [PASS] A08c 演出中に時間切れへ反転しない  -> {'st1': 'finishing', 'st2': 'result', 'just': 1, 'mood': 'heartbroken', 'total': 1022, 'best': 1022, 'left': 0.03333333333333334}
+
+A09 発見／時間切れの敗北
+  [PASS] A09a 敗北でゲーム時計が止まり、悔し顔の演出へ  -> {'time': {'s1': 'failing', 'early': False, 'late': True, 's2': 'fail', 'reason': '時間切れ', 'sub': '聖夜は、まだ終わらない', 'art': 'assets/v3/result_mission_failure.jpg'}, 'seen': {'s1': 'failing', 'early': False, 'late': True, 's2': 'fail', 'reason': '発見された', 'sub': '「……設備点検です」', 'art': 'assets/v3/result_mission_failure.jpg'}, 'retry': 'playing'}
+  [PASS] A09b 0.25秒前はスキップしない／以降は失敗画面へ
+  [PASS] A09c 失敗画面は親密な結果絵と理由  -> {'time': {'s1': 'failing', 'early': False, 'late': True, 's2': 'fail', 'reason': '時間切れ', 'sub': '聖夜は、まだ終わらない', 'art': 'assets/v3/result_mission_failure.jpg'}, 'seen': {'s1': 'failing', 'early': False, 'late': True, 's2': 'fail', 'reason': '発見された', 'sub': '「……設備点検です」', 'art': 'assets/v3/result_mission_failure.jpg'}, 'retry': 'playing'}
+  [PASS] A09d すぐ再挑戦できる
+
+A10 全ステージ制覇
+  [PASS] A10a 最終ステージ解放だけでは解放されない  -> {'before': False, 'after': True, 'state': 'ending', 'ending': True, 'firstAll': True}
+  [PASS] A10b 5ステージのクリアがそろった勝利で破局エンドへ  -> {'before': False, 'after': True, 'state': 'ending', 'ending': True, 'firstAll': True}
+
+A11 エンドのスキップ・再読込・再生
+  [PASS] A11a 0.25秒後の入力で復縁の場面へ、もう一度で全任務達成の結果へ  -> {'early': False, 'late': True, 'state': 'result', 'head': '全任務達成', 'sub': '聖夜、完全終了。', 'art': 'assets/v3/ending_all_clear_breakup.jpg', 'seen': True}
+  [PASS] A11b 再読込後も解放が残り、メニューから再生できる  -> {'u': True, 's': True, 'slot': True, 'same': True, 'back': True, 'second': 'finishing'}
+  [PASS] A11c 再生で記録・得点は増えない
+  [PASS] A11d 2回目以降の全制覇では強制再生しない  -> {'u': True, 's': True, 'slot': True, 'same': True, 'back': True, 'second': 'finishing'}
+
+A12 旧セーブの移行
+  [PASS] A12a 解放・設定・旧記録（版1/版2）を保持し、今回の版4は空  -> {'c': {'v': 1, 'mode': 'stick', 'preset': 'bl', 'stick': None, 'btn': None, 'from': 'v2-lefty-off'}, 'unlocked': 5, 'bgm': False, 'lite': True, 'best1': 9999, 'best2': 5, 'best3': 0, 'end': True, 'seen': False, 'state': 'title', 'ending': False}
+  [PASS] A12b 旧「左利きOFF」＝左側スティック → 左下へ移行  -> {'v': 1, 'mode': 'stick', 'preset': 'bl', 'stick': None, 'btn': None, 'from': 'v2-lefty-off'}
+  [PASS] A12c 旧版の全クリア証跡で破局エンドを解放（起動時に強制再生しない）  -> {'c': {'v': 1, 'mode': 'stick', 'preset': 'bl', 'stick': None, 'btn': None, 'from': 'v2-lefty-off'}, 'unlocked': 5, 'bgm': False, 'lite': True, 'best1': 9999, 'best2': 5, 'best3': 0, 'end': True, 'seen': False, 'state': 'title', 'ending': False}
+  [PASS] A12d 旧「左利きON」＝右側スティック → 右下へ移行／証跡なしは解放しない  -> {'c': {'v': 1, 'mode': 'stick', 'preset': 'br', 'stick': None, 'btn': None, 'from': 'v2-lefty-on'}, 'end': False}
+  [PASS] A12e 移行済み・変更済みの配置は上書きしない  -> {'v': 1, 'mode': 'drag', 'preset': 'bc', 'stick': None, 'btn': None, 'from': None}
+  [PASS] A12f 新規プレイヤーは右下から始まる  -> {'v': 1, 'mode': 'stick', 'preset': 'br', 'stick': None, 'btn': None, 'from': 'new'}
+
+A13 右下／中央下／左下と自由配置
+  [PASS] A13a 5種類の画面サイズ×3プリセットで、画面内・HUD外・8px以上の隙間
+  [PASS] A13b 編集中に重ねようとしても隙間を保つ
+  [PASS] A13c キャンセルでは保存しない／保存で自由配置（0〜1の座標）  -> {'sep': True, 'afterCancel': 'br', 'saved': {'v': 1, 'mode': 'stick', 'preset': 'custom', 'stick': [0.71, 0.7405186907021836], 'btn': [0.19, 0.8457138160931902], 'from': 'new'}, 'resetOk': True, 'bgm': True}
+  [PASS] A13d 「初期位置に戻す」は右下の配置
+  [PASS] A13e 画面サイズが変わっても自由配置を再クランプして重ならない  -> {'gap': 88.65584093339027, 'inside': True}
+
+A14 指2本・領域外のup・cancel
+  [PASS] A14a 画面の空き地のタップでは工作しない
+  [PASS] A14b 指1＝移動・指2＝工作、担当が入れ替わらない  -> {'noImplicit': True, 'stickOwner': 1, 'working': True, 'workOwner': 2, 'crossed': True, 'up': True, 'cancel': True, 'lost': True, 'ui': True}
+  [PASS] A14c 移動の指が工作ボタン上を通っても工作しない
+  [PASS] A14d 領域外のup／cancel／capture喪失で押しっぱなしが残らない  -> {'noImplicit': True, 'stickOwner': 1, 'working': True, 'workOwner': 2, 'crossed': True, 'up': True, 'cancel': True, 'lost': True, 'ui': True}
+  [PASS] A14e UI（一時停止）への押下は移動に取られない
+
+A15 工作開始と保持入力
+  [PASS] A15a スティック：置いたままの指では中断しない／新しい移動で中断  -> {'stickHeld': True, 'stickMoved': True, 'keyHeld': True, 'keyNew': True, 'dragHeld': True, 'dragMoved': True}
+  [PASS] A15b キーボード：押したままでは中断しない／新しいキーで中断  -> {'stickHeld': True, 'stickMoved': True, 'keyHeld': True, 'keyNew': True, 'dragHeld': True, 'dragMoved': True}
+  [PASS] A15c 直接ドラッグ：つかんだままでは中断しない／6px以上で中断  -> {'stickHeld': True, 'stickMoved': True, 'keyHeld': True, 'keyNew': True, 'dragHeld': True, 'dragMoved': True}
+
+A16 直接ドラッグ
+  [PASS] A16a 主人公に触れたときだけ取得する  -> {'offActor': True, 'grabbed': True, 'still': 0, 'speed': 168.00000000000728, 'arrivedErr': 0, 'stopped': True}
+  [PASS] A16b つかんだ瞬間に主人公が飛ばない  -> {'offActor': True, 'grabbed': True, 'still': 0, 'speed': 168.00000000000728, 'arrivedErr': 0, 'stopped': True}
+  [PASS] A16c 移動は通常速度の上限（168px/秒）を守る  -> {'offActor': True, 'grabbed': True, 'still': 0, 'speed': 168.00000000000728, 'arrivedErr': 0, 'stopped': True}
+  [PASS] A16d 指の位置（つかんだずれを保ったまま）へ到着し、離すと止まる  -> {'offActor': True, 'grabbed': True, 'still': 0, 'speed': 168.00000000000728, 'arrivedErr': 0, 'stopped': True}
+  [PASS] A16e ドラッグでもオーラの衝突は同じ（輪の中へ入らない）  -> {'minD': 68, 'rr': 68}
+
+A17 幅360px・異なる縦横比
+  [PASS] A17a-360x640 重要な文字14px以上・操作領域44px以上・横スクロールなし  -> {'hint': 14, 'mood': 15, 'pause': [44, 44], 'btn': [76, 76], 'stick': [88, 88], 'hscroll': True}
+  [PASS] A17b-360x640 結果画面：絵は contain（切り抜かない）・ボタンに届く  -> {'reachable': True, 'contain': 'contain', 'scrolls': False}
+  [PASS] A17a-360x780 重要な文字14px以上・操作領域44px以上・横スクロールなし  -> {'hint': 14, 'mood': 15, 'pause': [44, 44], 'btn': [76, 76], 'stick': [88, 88], 'hscroll': True}
+  [PASS] A17b-360x780 結果画面：絵は contain（切り抜かない）・ボタンに届く  -> {'reachable': True, 'contain': 'contain', 'scrolls': False}
+
+A18 無音・低負荷・保存不可
+  [PASS] A18a 無音・低負荷でも予告と結末が文字と表情で残る  -> {'cue': '撮るよ', 'line': '証明写真みたい……', 'mood': 'heartbroken', 'aura': True}
+  [PASS] A18b 保存できない環境でもプレイと結果が成立する  -> {'state': 'result', 'total': 3799}
+  [PASS] A18c JSONが壊れていても起動できる  -> {'state': 'title', 'unlocked': 1, 'c': 'br'}
+  [PASS] A18d 壊れた項目だけ既定値へ（解放は残す）  -> {'u': 4, 'best': 'object', 'c': {'v': 1, 'mode': 'stick', 'preset': 'br', 'stick': None, 'btn': None, 'from': None}}
+
+R  v2 からの回帰確認
+  [PASS] R01 大型LED（テレビ）は置かない  -> [{'id': 1, 'n': 9, 'time': 70, 'led': 0, 'reindeer': 1}, {'id': 2, 'n': 13, 'time': 65, 'led': 0, 'reindeer': 1}, {'id': 3, 'n': 13, 'time': 60, 'led': 0, 'reindeer': 1}, {'id': 4, 'n': 14, 'time': 65, 'led': 0, 'reindeer': 2}, {'id': 5, 'n': 13, 'time': 60, 'led': 0, 'reindeer': 2}, {'id': 'SP', 'n': 67, 'time': 80, 'led': 0, 'reindeer': 4}]
+  [PASS] R02 各ステージに時間延長のトナカイ（通常1〜2体・特別4体）  -> [{'id': 1, 'n': 9, 'time': 70, 'led': 0, 'reindeer': 1}, {'id': 2, 'n': 13, 'time': 65, 'led': 0, 'reindeer': 1}, {'id': 3, 'n': 13, 'time': 60, 'led': 0, 'reindeer': 1}, {'id': 4, 'n': 14, 'time': 65, 'led': 0, 'reindeer': 2}, {'id': 5, 'n': 13, 'time': 60, 'led': 0, 'reindeer': 2}, {'id': 'SP', 'n': 67, 'time': 80, 'led': 0, 'reindeer': 4}]
+  [PASS] R03 コンボ待機猶予（最大1.2秒・デート期限は延ばさない）  -> {'c0': 1, 'held': 1, 'used': 1.2, 'evT': 2.1166666666666645}
+  [PASS] R04 一時停止で制限時間・デート期限・発見がすべて止まる
+  [PASS] R05 警備員の調査（反応→確認→復帰、什器を通らない、ステージ1は対象外）  -> {'reacted': 'react', 'check': True, 'wall': False, 'back': 'patrol', 's1': True}
+  [PASS] R06 同一フレームの勝敗は敗北が優先・二重保存なし  -> {'state': 'failing', 'result': False, 'best': 0}
+  [PASS] R07 タイムボーナスは演出前の残り時間・演出中に減らない  -> {'total': 2299, 'expect': 2299, 'still': True}
+  [PASS] R08 全ステージ（特別含む）に固有のデート1つ・オーラ1〜2か所  -> [{'id': 1, 'ev': 1, 'auras': 1}, {'id': 2, 'ev': 1, 'auras': 1}, {'id': 3, 'ev': 1, 'auras': 1}, {'id': 4, 'ev': 1, 'auras': 2}, {'id': 5, 'ev': 1, 'auras': 1}, {'id': 6, 'ev': 1, 'auras': 2}]
+
+V  v4：全イルミ・時間延長・フィーバー・通行カップル・向き・特別ステージ
+  [PASS] V01 全ステージ：最後の1個を残すと続行、すべて工作でクリア（ムード0%）  -> [{'id': 1, 'beforeLast': {'state': 'playing', 'mood': 14.563106796116505}, 'after': 'finishing', 'mood': 0}, {'id': 2, 'beforeLast': {'state': 'playing', 'mood': 10.94890510948905}, 'after': 'finishing', 'mood': 0}, {'id': 3, 'beforeLast': {'state': 'playing', 'mood': 10.48951048951049}, 'after': 'finishing', 'mood': 0}, {'id': 4, 'beforeLast': {'state': 'playing', 'mood': 8.379888268156424}, 'after': 'finishing', 'mood': 0}, {'id': 5, 'beforeLast': {'state': 'playing', 'mood': 9.036144578313253}, 'after': 'ending', 'mood': 0}, {'id': 6, 'beforeLast': {'state': 'playing', 'mood': 6.410256410256411}, 'after': 'finishing', 'mood': 0}]
+  [PASS] V02 金色のトナカイの工作で制限時間+10秒（ほかのイルミでは増えない）  -> {'plain': 0, 'bonus': 10, 'count': 1}
+  [PASS] V03 工作時間：3連鎖 ×0.84、10連鎖以上（フィーバー） ×0.7  -> [1, 0.84, 0.84, 0.7, 0.7]
+  [PASS] V04a 通行人は全員カップル・指定数を配置・イルミやオーラに重ならない  -> [{'id': 1, 'want': 3, 'got': 3, 'near': 0}, {'id': 2, 'want': 8, 'got': 8, 'near': 0}, {'id': 3, 'want': 5, 'got': 5, 'near': 0}, {'id': 4, 'want': 7, 'got': 7, 'near': 0}, {'id': 5, 'want': 7, 'got': 7, 'near': 0}, {'id': 6, 'want': 10, 'got': 10, 'near': 0}]
+  [PASS] V04b 近くのイルミが消えた通行カップルだけが冷める  -> {'d': 142.45112187676636, 'mood': 'dejected', 'far': True}
+  [PASS] V05 歩く向き：左右の進行方向に合わせて絵を反転（後ろ向き歩きをしない）  -> {'gr': {'key': 'npc_guard_walk_side', 'flip': False, 'dir': 'side'}, 'gl': {'key': 'npc_guard_walk_side', 'flip': True, 'dir': 'side'}, 'gu': {'key': 'npc_guard_walk_back', 'flip': False, 'dir': 'back'}, 'cr': {'key': 'npc_couple_walk_side', 'flip': False, 'dir': 'side'}, 'cl': {'key': 'npc_couple_walk_side', 'flip': True, 'dir': 'side'}, 'pl': {'key': 'player_agent', 'flip': True, 'dir': 'side'}, 'pr': {'key': 'player_agent', 'flip': False, 'dir': 'side'}, 'side': True}
+  [PASS] V06 ステージ5はテレビではなくプレゼント・雪だるま・トナカイ  -> [1, 1, 1, 2, 5, 8]
+  [PASS] V07a 特別ステージは全制覇まで出ない（通常は5ステージ）  -> {'locked': True, 'n': 5, 'unlocked': True, 'slot': True, 'head': '延長戦、終了', 'next': 'none', 'unlockedSame': True, 'spBest': True, 'allCleared': True}
+  [PASS] V07b 全制覇でエンディング後に出現し、ステージ選択に並ぶ  -> {'locked': True, 'n': 5, 'unlocked': True, 'slot': True, 'head': '延長戦、終了', 'next': 'none', 'unlockedSame': True, 'spBest': True, 'allCleared': True}
+  [PASS] V07c 特別ステージの結果（延長戦、終了）・次のステージ無し・記録は別枠  -> {'locked': True, 'n': 5, 'unlocked': True, 'slot': True, 'head': '延長戦、終了', 'next': 'none', 'unlockedSame': True, 'spBest': True, 'allCleared': True}
+  [PASS] V08 全制覇済みのセーブにも特別ステージを出し、タイトルで知らせる  -> {'sp': True, 'seen': False, 'badge': True, 'text': '特別ステージ「青の回廊」が出現しました（ステージ選択から）'}
+  [PASS] V09 完了直後に工作ボタンを押しても、完了済みの対象で固まらない  -> {'done': True, 'started': False, 'stuck': False}
+  [PASS] V10 破局の後、復縁（「意地でも、クリスマスデートをする！」）と特別ステージの出現を見せる  -> {'lineA': 1, 'lineB': 1, 'banner': 1, 'a': '女性「……やっぱり、諦めきれない」', 'b': '男性「意地でも、クリスマスデートをする！」'}
+
+実行時エラー
+  [PASS] ERR JavaScriptエラーなし
+
+================================================================
+合計 94 件 / PASS 94 / FAIL 0
+================================================================

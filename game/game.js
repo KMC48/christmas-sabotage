@@ -457,6 +457,13 @@
     npc_couple_breakup: [12, 12, 622, 744],
     player_agent_success: [13, 12, 341, 744],
     player_agent_failure: [13, 12, 371, 744],
+    /* v4歩行：alpha > 12 の外接矩形。全方向の足元を同じ基準に揃える */
+    npc_guard_walk_side: [103, 4, 306, 508],
+    npc_guard_walk_front: [145, 4, 221, 508],
+    npc_guard_walk_back: [151, 4, 210, 508],
+    npc_couple_walk_side: [131, 4, 377, 508],
+    npc_couple_walk_front: [164, 4, 311, 508],
+    npc_couple_walk_back: [165, 4, 309, 508],
   };
   /* 結果・エンディング絵（DOMで表示。縦画面では contain の横長パネル） */
   const PANEL_SRC = {
@@ -489,10 +496,10 @@
     npc_guard_walk_side: 62, npc_guard_walk_front: 62, npc_guard_walk_back: 62,
     npc_couple_walk_side: 66, npc_couple_walk_front: 66, npc_couple_walk_back: 66, player_agent_back: 64,
   };
-  /* 歩く向きごとの絵。[素材キー, 絵が向いている左右（1=右, -1=左）]。fb = 向きの絵が無いときの代用 */
+  /* 歩く向きごとの絵。[素材キー, 絵が向いている左右（1=右, -1=左, 0=反転なし）]。fb = 向きの絵が無いときの代用 */
   const WALK = {
-    guard:  { side: ['npc_guard_walk_side', 1], front: ['npc_guard_walk_front', 1], back: ['npc_guard_walk_back', 1], fb: ['npc_guard_check', -1] },
-    couple: { side: ['npc_couple_walk_side', 1], front: ['npc_couple_walk_front', 1], back: ['npc_couple_walk_back', 1], fb: ['npc_couple_tunnel', -1] },
+    guard:  { side: ['npc_guard_walk_side', 1], front: ['npc_guard_walk_front', 0], back: ['npc_guard_walk_back', 0], fb: ['npc_guard_check', -1] },
+    couple: { side: ['npc_couple_walk_side', 1], front: ['npc_couple_walk_front', 0], back: ['npc_couple_walk_back', 0], fb: ['npc_couple_tunnel', -1] },
     player: { side: ['player_agent', 1], front: ['player_agent', 1], back: ['player_agent_back', 1], fb: ['player_agent', 1] },
   };
   /* カップルの結末 → 差分素材 */

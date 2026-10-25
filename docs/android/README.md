@@ -1,6 +1,8 @@
 # クリスマス粉砕大作戦　Androidアプリ化とGoogle Play配信
 
-2026-10-11　作業ブランチ：`feat/android-app`
+初回実装：2026-10-11　作業ブランチ：`feat/android-app`
+
+2026-10-15：PR #3へ統合済み。最新の統合検証は [native-integration.md](../native-integration.md) を参照。下記のエミュレータ／ビルド記録は元ブランチでの実施結果です。
 
 ## 1. できていること（2026-10-11、Windowsで実施）
 

@@ -10,15 +10,28 @@
 見た目（顔や足先が切れていないか等）と実機のタッチ操作は、このスクリプトでは確認できない。
 確認できる範囲だけを PASS として報告する。
 """
+import functools
+import http.server
 import json
 import os
 import sys
+import threading
 
 from playwright.sync_api import sync_playwright
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-INDEX = os.path.abspath(os.path.join(HERE, '..', 'index.html'))
-URL = 'file:///' + INDEX.replace(os.sep, '/')
+GAME_DIR = os.path.abspath(os.path.join(HERE, '..'))
+
+
+class _QuietHandler(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, *a):
+        pass
+
+
+# 同梱フォント（@font-face）は file:// では読めないため、公開時と同じく HTTP で開く
+_server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), functools.partial(_QuietHandler, directory=GAME_DIR))
+threading.Thread(target=_server.serve_forever, daemon=True).start()
+URL = 'http://127.0.0.1:%d/index.html' % _server.server_port
 
 results = []
 

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">クリスマス粉砕大作戦</string>
+    <string name="title_activity_main">クリスマス粉砕大作戦</string>
+    <string name="package_name">jp.kmccreativelab.christmassabotage</string>
+    <string name="custom_url_scheme">jp.kmccreativelab.christmassabotage</string>
+</resources>

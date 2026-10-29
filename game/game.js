@@ -3030,7 +3030,7 @@
   }
 
   /* ---------- 画面遷移 ---------- */
-  const OVS = ['ovTitle', 'ovSelect', 'ovResult', 'ovFail', 'ovPause', 'ovSettings', 'ovLayout', 'ovEnding', 'ovExit'];
+  const OVS = ['ovTitle', 'ovSelect', 'ovResult', 'ovFail', 'ovPause', 'ovSettings', 'ovPrivacy', 'ovLayout', 'ovEnding', 'ovExit'];
   function showOv(id) {
     OVS.forEach((o) => $(o).classList.toggle('on', o === id));
     ui.hud.classList.toggle('hide', !!id);
@@ -3472,6 +3472,7 @@
     switch (visible) {
       case 'ovExit': showOv('ovTitle'); return;
       case 'ovLayout': cancelLayout(); return;
+      case 'ovPrivacy': showOv('ovSettings'); $('btnPrivacy').focus(); return;
       case 'ovSettings': showOv(settingsBack); return;
       case 'ovEnding': finishEnding(); return;
       case 'ovPause': resumePlay(); return;
@@ -3544,6 +3545,8 @@
     on('btnSettings', () => { settingsBack = 'ovTitle'; refreshControlUI(); showOv('ovSettings'); });
     on('btnSettings2', () => { settingsBack = 'ovPause'; refreshControlUI(); showOv('ovSettings'); });
     on('btnSetBack', () => showOv(settingsBack));
+    on('btnPrivacy', () => { showOv('ovPrivacy'); $('btnPrivacyBack').focus(); });
+    on('btnPrivacyBack', () => { showOv('ovSettings'); $('btnPrivacy').focus(); });
     on('btnPause', doPause);
     on('btnResume', resumePlay);
     on('btnRetry', retry); on('btnRetry2', retry); on('btnRetry3', retry);

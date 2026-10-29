@@ -206,6 +206,26 @@ class AndroidBackTests(unittest.TestCase):
         self.overlay('ovTitle')
         self.assertEqual(self.page.evaluate('nativeTest.exits'), 0)
 
+    def test_privacy_overlay_back_and_button_keep_paused_save(self):
+        self.begin()
+        self.back()
+        self.overlay('ovPause')
+        self.click('btnSettings2')
+        before = self.stored()
+        self.click('btnPrivacy')
+        self.overlay('ovPrivacy')
+        self.page.frame_locator('#privacyFrame').locator('h1').wait_for(state='visible')
+        self.back()
+        self.overlay('ovSettings')
+        self.assertEqual(self.stored(), before)
+        self.click('btnPrivacy')
+        self.click('btnPrivacyBack')
+        self.overlay('ovSettings')
+        self.back()
+        self.overlay('ovPause')
+        self.assertEqual(self.page.evaluate('XMAS.G.state'), 'pause')
+        self.assertEqual(self.stored(), before)
+
     def test_nested_layout_settings_pause_and_resume(self):
         self.begin()
         self.back()

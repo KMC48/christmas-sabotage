@@ -37,6 +37,7 @@ jobs:
       - run: python game/tests/test_android_back.py
       - run: python game/tests/test_walk_sprites.py
       - run: python game/tests/test_packaged_offline.py
+      - run: python game/tests/test_privacy.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:

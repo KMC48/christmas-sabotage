@@ -3046,7 +3046,7 @@
   }
 
   /* ---------- 画面遷移 ---------- */
-  const OVS = ['ovTitle', 'ovSelect', 'ovResult', 'ovFail', 'ovPause', 'ovSettings', 'ovLayout', 'ovEnding', 'ovExit', 'ovHowto'];
+  const OVS = ['ovTitle', 'ovSelect', 'ovResult', 'ovFail', 'ovPause', 'ovSettings', 'ovPrivacy', 'ovLayout', 'ovEnding', 'ovExit', 'ovHowto'];
   function showOv(id) {
     OVS.forEach((o) => $(o).classList.toggle('on', o === id));
     ui.hud.classList.toggle('hide', !!id);
@@ -3490,6 +3490,7 @@
     switch (visible) {
       case 'ovExit': showOv('ovTitle'); return;
       case 'ovLayout': cancelLayout(); return;
+      case 'ovPrivacy': showOv('ovSettings'); $('btnPrivacy').focus(); return;
       case 'ovSettings': showOv(settingsBack); return;
       case 'ovHowto': closeHowto(); return;
       case 'ovEnding': finishEnding(); return;
@@ -3567,6 +3568,8 @@
     on('btnHowto2', () => openHowto('ovPause'));
     on('btnHowBack', closeHowto);
     on('btnHowGo', () => { if (howtoBack === 'ovPause') resumePlay(); else closeHowto(); });
+    on('btnPrivacy', () => { showOv('ovPrivacy'); $('btnPrivacyBack').focus(); });
+    on('btnPrivacyBack', () => { showOv('ovSettings'); $('btnPrivacy').focus(); });
     on('btnPause', doPause);
     on('btnResume', resumePlay);
     on('btnRetry', retry); on('btnRetry2', retry); on('btnRetry3', retry);

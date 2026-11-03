@@ -3028,7 +3028,8 @@
     if (ready !== chromeReady) {
       chromeReady = ready;
       ui.btnSab.classList.toggle('ready', ready);
-      if (ready) { Audio2.se.ready(); haptic(8); }
+      /* ロックオンは音と光だけで知らせる（近づくたびの振動は気が散るため鳴らさない） */
+      if (ready) Audio2.se.ready();
     }
   }
   let chromeReady = false;

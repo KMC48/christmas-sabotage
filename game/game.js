@@ -430,6 +430,11 @@
     bg6: 'assets/v4/bg_stage6.jpg',
     bg1: 'assets/bg_stage1.jpg', bg2: 'assets/bg_stage2.jpg', bg3: 'assets/bg_stage3.jpg',
     bg4: 'assets/bg_stage4.jpg', bg5: 'assets/bg_stage5.jpg',
+    /* v5「遊び方」の挿絵（ChatGPTへ発注中）。無い間は既存の立ち絵のシルエットで代用する */
+    howto_move:     'assets/v5/howto_move.png',
+    howto_sabotage: 'assets/v5/howto_sabotage.png',
+    howto_caution:  'assets/v5/howto_caution.png',
+    howto_time:     'assets/v5/howto_time.png',
   };
 
   /* スプライトの不透明部分の外接矩形 [x, y, w, h]。
@@ -539,6 +544,7 @@
           VAR.dark[k] = makeVariant(im, 'dark');
         }
         if (k === 'title_key' || k === 'hero') applyTitleArt();
+        if (k.indexOf('howto_') === 0 || k === 'player_agent' || k === 'player_agent_work' || k === 'npc_guard_check') applyHowtoArt();
       };
       im.onerror = () => { /* 未納品：プロシージャル描画にフォールバック */ };
       im.src = ASSET_SRC[k];
@@ -551,6 +557,16 @@
     a.style.backgroundImage = 'url("' + src + '")';
     a.style.backgroundPosition = IMG.title_key ? 'center top' : '52% 18%';
     a.classList.remove('none');
+    $('howArt').style.backgroundImage = 'url("' + src + '")';
+  }
+  /* 遊び方の挿絵：専用の絵があればそれを、無ければ既存の立ち絵をシルエットにして置く */
+  function applyHowtoArt() {
+    document.querySelectorAll('.cardArt').forEach((el) => {
+      const art = el.dataset.art, fb = el.dataset.fb;
+      const key = IMG[art] ? art : fb && IMG[fb] ? fb : null;
+      el.style.backgroundImage = key ? 'url("' + ASSET_SRC[key] + '")' : '';
+      el.classList.toggle('fb', !!key && key !== art);
+    });
   }
 
   /* 切り抜き矩形を使って、足元を (cx, by) に合わせて描く */
@@ -3030,7 +3046,7 @@
   }
 
   /* ---------- 画面遷移 ---------- */
-  const OVS = ['ovTitle', 'ovSelect', 'ovResult', 'ovFail', 'ovPause', 'ovSettings', 'ovPrivacy', 'ovLayout', 'ovEnding', 'ovExit'];
+  const OVS = ['ovTitle', 'ovSelect', 'ovResult', 'ovFail', 'ovPause', 'ovSettings', 'ovPrivacy', 'ovLayout', 'ovEnding', 'ovExit', 'ovHowto'];
   function showOv(id) {
     OVS.forEach((o) => $(o).classList.toggle('on', o === id));
     ui.hud.classList.toggle('hide', !!id);
@@ -3382,9 +3398,11 @@
     document.querySelectorAll('[data-preset]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.preset === c.preset)));
     $('presetNote').textContent = c.preset === 'custom' ? '自由配置を使用中' : '';
     const drag = c.mode === 'drag';
-    $('briefMove').textContent = !touchMode ? 'WASD / 矢印キー（スマホは' + (drag ? '主人公を直接ドラッグ' : 'スティック') + '）'
-      : drag ? '主人公を指でつかんで動かす' : '画面下のスティック';
-    $('briefSab').textContent = !touchMode ? '近づいてスペースキー（スマホは「工作」ボタン）' : '近づいて「工作」ボタン';
+    /* 遊び方の説明。句ごとに区切り、言葉の途中で改行しない（文言は固定の文字列だけ） */
+    const ph = (...parts) => parts.map((s) => '<span class="ph">' + s + '</span>').join('');
+    $('briefMove').innerHTML = !touchMode ? ph('WASD／矢印キーで移動', '（スマホは' + (drag ? '主人公をドラッグ' : '画面下のスティック') + '）')
+      : drag ? ph('主人公を指でつかんで', '動かす') : ph('画面下のスティックで', '移動');
+    $('briefSab').innerHTML = !touchMode ? ph('対象に近づいて', 'スペースキー', '（スマホは「工作」ボタン）') : ph('対象に近づいて', '「工作」ボタン');
     if ($('protoStats')) $('protoStats').innerHTML = protoStatsHtml();
   }
   function protoStatsHtml() {
@@ -3474,6 +3492,7 @@
       case 'ovLayout': cancelLayout(); return;
       case 'ovPrivacy': showOv('ovSettings'); $('btnPrivacy').focus(); return;
       case 'ovSettings': showOv(settingsBack); return;
+      case 'ovHowto': closeHowto(); return;
       case 'ovEnding': finishEnding(); return;
       case 'ovPause': resumePlay(); return;
       case 'ovResult': case 'ovFail': showSelect(); return;
@@ -3545,6 +3564,10 @@
     on('btnSettings', () => { settingsBack = 'ovTitle'; refreshControlUI(); showOv('ovSettings'); });
     on('btnSettings2', () => { settingsBack = 'ovPause'; refreshControlUI(); showOv('ovSettings'); });
     on('btnSetBack', () => showOv(settingsBack));
+    on('btnHowto', () => openHowto('ovTitle'));
+    on('btnHowto2', () => openHowto('ovPause'));
+    on('btnHowBack', closeHowto);
+    on('btnHowGo', () => { if (howtoBack === 'ovPause') resumePlay(); else closeHowto(); });
     on('btnPrivacy', () => { showOv('ovPrivacy'); $('btnPrivacyBack').focus(); });
     on('btnPrivacyBack', () => { showOv('ovSettings'); $('btnPrivacy').focus(); });
     on('btnPause', doPause);
@@ -3586,6 +3609,16 @@
     sw('swLite', 'lite', () => resize());
   }
   let settingsBack = 'ovTitle';
+  /* 遊び方：開いた画面（タイトル／一時停止）へ戻る。一時停止から開いた場合は「任務へ戻る」で再開 */
+  let howtoBack = 'ovTitle';
+  function openHowto(from) {
+    howtoBack = from;
+    refreshControlUI();
+    $('howGoLabel').textContent = from === 'ovPause' ? '任務へ戻る' : 'タイトルへ戻る';
+    showOv('ovHowto');
+    $('ovHowto').scrollTop = 0;
+  }
+  function closeHowto() { showOv(howtoBack); }
   function sw(id, key, after) {
     const el = $(id);
     el.setAttribute('aria-checked', String(!!save[key]));

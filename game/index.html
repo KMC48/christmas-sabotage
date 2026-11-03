@@ -211,23 +211,109 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
 .btn:focus-visible{outline:calc(var(--u)*2) solid var(--cold); outline-offset:calc(var(--u)*2)}
 .row{display:flex; gap:calc(var(--u)*10)}
 
-/* ── タイトル ── */
+/* ── タイトル（上半分は主人公のキービジュアル。ロゴは工作後の「蛍光白」の金属、差し色は警告の赤） ── */
 #ovTitle{background:var(--night)}
-#titleArt{position:absolute; inset:0; background-size:cover; background-position:center top; opacity:.94}
+/* キービジュアルは全身の立ち絵を拡大して胸から上を見せる */
+#titleArt{position:absolute; left:0; right:0; top:0; height:64%; background-size:150% auto; background-position:46% 0%; background-repeat:no-repeat}
 #titleArt.none{background:radial-gradient(120% 80% at 50% 18%, #1E2947, var(--night) 70%)}
 #titleShade{position:absolute; inset:0;
-  background:linear-gradient(180deg, rgba(10,14,28,.2) 0%, rgba(10,14,28,0) 30%, rgba(10,14,28,.86) 58%, var(--night) 96%)}
-#ovTitle .pad{position:relative; justify-content:flex-end; gap:calc(var(--u)*12)}
-#titleMark{font-family:var(--hud); font-size:calc(var(--u)*11); letter-spacing:.34em; color:var(--gold)}
-#titleMain{font-family:var(--disp); font-size:calc(var(--u)*46); line-height:1.06; margin:0; text-wrap:balance;
-  text-shadow:0 calc(var(--u)*4) calc(var(--u)*30) rgba(0,0,0,.9)}
-#titleMain em{font-style:normal; color:var(--cold); text-shadow:0 0 calc(var(--u)*26) rgba(220,238,255,.45)}
-/* 導入文と操作説明は大きめの文字に（スマホでも 15px 以上）。行の切れ目は .ph の単位 */
-#titleLead{font-size:max(calc(var(--u)*19), 15px); line-height:1.6; color:#B9C6DE; margin:0; max-width:34em}
-#titleLead .ph, #brief .ph{display:inline-block}
-#brief{display:grid; gap:calc(var(--u)*9); margin:calc(var(--u)*2) 0 calc(var(--u)*4)}
-#brief div{display:flex; gap:calc(var(--u)*10); align-items:baseline; font-size:max(calc(var(--u)*19), 15px); line-height:1.4; color:var(--text)}
-#brief b{font-family:var(--hud); color:var(--gold); font-size:max(calc(var(--u)*16), 13px); letter-spacing:.16em; flex:0 0 max(calc(var(--u)*62), 48px)}
+  background:linear-gradient(180deg, rgba(10,14,28,.15) 0%, rgba(10,14,28,0) 26%, rgba(10,14,28,.55) 48%, rgba(10,14,28,.94) 62%, var(--night) 70%)}
+#ovTitle .pad{position:relative; justify-content:flex-end; align-items:center; text-align:center;
+  gap:calc(var(--u)*14); padding-bottom:calc(var(--u)*22)}
+#titleMain{margin:0 0 calc(var(--u)*2); font-family:var(--disp); font-weight:400; line-height:1; display:flex; flex-direction:column; align-items:center;
+  transform:skewX(-6deg); filter:drop-shadow(0 calc(var(--u)*5) calc(var(--u)*10) rgba(0,0,0,.95))}
+#titleMain .l1, #titleMain .l2{display:block; white-space:nowrap; color:transparent; -webkit-background-clip:text; background-clip:text;
+  background-image:linear-gradient(180deg, #FFFFFF 0%, #EEF3F9 34%, #A9B4C4 55%, #E6EDF6 78%, #B7C2D2 100%)}
+#titleMain .l1{font-size:calc(var(--u)*66); letter-spacing:.04em}
+#titleMain .l2{font-size:calc(var(--u)*90); letter-spacing:.01em}
+#titleMain .bar{display:block; width:calc(var(--u)*430); height:calc(var(--u)*3); margin:calc(var(--u)*4) 0 calc(var(--u)*6);
+  background:linear-gradient(90deg, transparent, var(--alert) 18%, #FF9AA6 50%, var(--alert) 82%, transparent);
+  box-shadow:0 0 calc(var(--u)*12) rgba(255,74,92,.8)}
+.goldRule{width:78%; height:1px; flex:0 0 auto; background:linear-gradient(90deg, transparent, var(--gold) 50%, transparent); opacity:.75}
+/* 導入文は大きめの文字に（スマホでも 15px 以上）。行の切れ目は .ph の単位 */
+#titleLead{margin:0; display:grid; gap:calc(var(--u)*10); font-size:max(calc(var(--u)*20), 15px); line-height:1.5;
+  letter-spacing:.06em; color:#CBD5E6; text-shadow:0 1px calc(var(--u)*6) rgba(0,0,0,.9)}
+#titleLead p{margin:0}
+#titleLead .q{font-size:max(calc(var(--u)*27), 18px); font-weight:700; color:#F3E7CF}
+#titleLead .ph, .howCard .ph, .howTip .ph{display:inline-block}
+/* 大きな赤いボタン（タイトル・遊び方で共通）。暖色イルミの金で縁取る */
+.btn.cta{position:relative; display:flex; align-items:center; justify-content:center; gap:calc(var(--u)*14);
+  font-family:var(--disp); font-weight:400; font-size:max(calc(var(--u)*36), 24px); letter-spacing:.14em; color:#FFF1DC;
+  padding:calc(var(--u)*17) calc(var(--u)*14); border:1px solid #E7B866; border-radius:calc(var(--u)*10);
+  background:linear-gradient(180deg, #D8283E 0%, #A31428 52%, #7D0D1D 100%);
+  box-shadow:inset 0 1px 0 rgba(255,210,180,.45), inset 0 0 0 calc(var(--u)*3) rgba(60,5,14,.35),
+    0 0 calc(var(--u)*22) rgba(255,74,92,.35), 0 calc(var(--u)*6) calc(var(--u)*18) rgba(0,0,0,.6);
+  text-shadow:0 calc(var(--u)*2) calc(var(--u)*4) rgba(60,5,14,.8)}
+.btn.cta .tri{width:0; height:0; border-style:solid; border-width:calc(var(--u)*13) 0 calc(var(--u)*13) calc(var(--u)*20);
+  border-color:transparent transparent transparent #FFF1DC; filter:drop-shadow(0 calc(var(--u)*2) calc(var(--u)*3) rgba(60,5,14,.8))}
+.btn.cta:focus-visible{outline-color:var(--gold)}
+#ovTitle .row{width:100%}
+/* 背の低い画面（iPhone SE の Safari など）：文字は 15px 以上のまま、余白と行間だけ詰めて主人公の顔にロゴを重ねない */
+#ovTitle{container-type:size}
+@container (max-height: 600px){
+  #ovTitle .pad{gap:calc(var(--u)*9); padding-bottom:calc(var(--u)*12)}
+  #titleMain .l1{font-size:calc(var(--u)*58)}
+  #titleMain .l2{font-size:calc(var(--u)*80)}
+  #titleLead{gap:calc(var(--u)*4); line-height:1.4}
+  .goldRule{display:none}
+  #ovTitle .btn.cta{padding-block:calc(var(--u)*12)}
+  #ovTitle .btn.sub{padding-block:calc(var(--u)*11)}
+  .linkBtn{padding-block:calc(var(--u)*4)}
+}
+.btn.sub{display:flex; align-items:center; justify-content:center; gap:calc(var(--u)*12);
+  font-size:max(calc(var(--u)*21), 15px); letter-spacing:.06em; padding:calc(var(--u)*16) calc(var(--u)*10);
+  background:rgba(12,17,34,.88); border-color:rgba(231,184,102,.55)}
+.ico{width:max(calc(var(--u)*26), 18px); height:max(calc(var(--u)*26), 18px); flex:0 0 auto; color:var(--gold); fill:currentColor}
+.linkBtn{display:inline-flex; align-items:center; gap:calc(var(--u)*10); background:none; border:0; padding:calc(var(--u)*8) calc(var(--u)*12);
+  color:var(--text); font-family:var(--body); font-weight:700; font-size:max(calc(var(--u)*21), 15px); letter-spacing:.08em; cursor:pointer}
+.linkBtn span{border-bottom:1px solid var(--gold); padding-bottom:calc(var(--u)*2)}
+.linkBtn:focus-visible{outline:calc(var(--u)*2) solid var(--cold); outline-offset:calc(var(--u)*2)}
+
+/* ── 遊び方 ── */
+#ovHowto{background:var(--night)}
+#ovHowto .pad{justify-content:flex-start; gap:calc(var(--u)*14); padding-top:calc(var(--u)*16)}
+#howHead{position:relative; min-height:calc(var(--u)*318); margin:calc(var(--u)*-16) calc(var(--u)*-26) 0}
+#howArt{position:absolute; inset:0; background-size:210% auto; background-position:66% 5%; background-repeat:no-repeat; opacity:.95;
+  -webkit-mask-image:linear-gradient(180deg, #000 55%, transparent 100%); mask-image:linear-gradient(180deg, #000 55%, transparent 100%)}
+#howArt::after{content:""; position:absolute; inset:0; background:linear-gradient(90deg, rgba(10,14,28,0) 20%, rgba(10,14,28,.55) 55%, rgba(10,14,28,.75) 100%)}
+#btnHowBack{position:absolute; left:calc(var(--u)*18); top:calc(var(--u)*18); z-index:1; display:flex; align-items:center; gap:calc(var(--u)*8);
+  padding:calc(var(--u)*9) calc(var(--u)*16); border:1px solid rgba(231,184,102,.7); border-radius:calc(var(--u)*8);
+  background:rgba(10,14,28,.7); color:var(--text); font-family:var(--body); font-weight:700; font-size:max(calc(var(--u)*19), 15px); cursor:pointer}
+#btnHowBack::before{content:""; border-style:solid; border-width:calc(var(--u)*7) calc(var(--u)*11) calc(var(--u)*7) 0; border-color:transparent var(--text) transparent transparent}
+#howTitle{position:absolute; right:calc(var(--u)*26); top:calc(var(--u)*16); width:calc(var(--u)*270); text-align:center}
+#howTitle h2{margin:0; font-family:var(--disp); font-weight:400; font-size:calc(var(--u)*58); line-height:1.1; color:var(--cold);
+  text-shadow:0 calc(var(--u)*3) calc(var(--u)*12) rgba(0,0,0,.9)}
+#howTitle h2::after{content:""; display:block; height:calc(var(--u)*3); margin:calc(var(--u)*6) auto calc(var(--u)*6); width:80%;
+  background:linear-gradient(90deg, transparent, var(--alert), transparent); box-shadow:0 0 calc(var(--u)*10) rgba(255,74,92,.7)}
+#howTitle small{font-family:var(--hud); font-weight:600; font-size:max(calc(var(--u)*13), 11px); letter-spacing:.4em; color:var(--muted)}
+#howQuote{position:absolute; right:calc(var(--u)*26); top:calc(var(--u)*150); width:calc(var(--u)*290); margin:0;
+  padding:calc(var(--u)*16) calc(var(--u)*14); border:1px solid rgba(231,184,102,.6); border-radius:calc(var(--u)*6);
+  background:rgba(10,14,28,.78); text-align:center; font-weight:700; font-size:max(calc(var(--u)*23), 15px); line-height:1.6; color:#F3E7CF;
+  box-shadow:inset 0 0 0 calc(var(--u)*4) rgba(10,14,28,.9), inset 0 0 0 calc(var(--u)*5) rgba(231,184,102,.25)}
+.secHead{display:flex; align-items:center; gap:calc(var(--u)*14); margin:calc(var(--u)*10) 0 calc(var(--u)*2);
+  font-family:var(--disp); font-weight:400; font-size:max(calc(var(--u)*36), 22px); letter-spacing:.1em; color:var(--text)}
+.secHead::before, .secHead::after{content:""; flex:1; height:1px; background:linear-gradient(90deg, transparent, var(--gold))}
+.secHead::after{background:linear-gradient(90deg, var(--gold), transparent)}
+.howCard{position:relative; display:grid; grid-template-columns:max(calc(var(--u)*66), 44px) 1fr; align-items:center; gap:calc(var(--u)*14);
+  min-height:calc(var(--u)*120); padding:calc(var(--u)*14) 22% calc(var(--u)*14) calc(var(--u)*14);
+  border:1px solid rgba(231,184,102,.45); border-radius:calc(var(--u)*10); background:rgba(14,20,38,.92); overflow:hidden}
+.howCard > svg{width:100%; height:auto; color:var(--gold); fill:currentColor; padding-right:calc(var(--u)*14); border-right:1px solid rgba(231,184,102,.35)}
+.howCard h3{margin:0 0 calc(var(--u)*6); font-family:var(--disp); font-weight:400; font-size:max(calc(var(--u)*27), 18px); line-height:1.2; color:var(--cold)}
+.howCard h3::after{content:""; display:block; width:calc(var(--u)*56); height:calc(var(--u)*2); margin-top:calc(var(--u)*5); background:var(--alert)}
+.howCard p{margin:0; font-size:max(calc(var(--u)*20), 15px); line-height:1.5; color:var(--text); text-shadow:0 1px 4px rgba(10,14,28,.95)}
+.howCard > div:first-of-type{position:relative; z-index:1}
+/* 右側の挿絵（assets/v5/howto_*.png）。無い間は既存の立ち絵をシルエットにして代用 */
+.cardArt{position:absolute; right:0; top:0; bottom:0; width:40%; pointer-events:none;
+  background-repeat:no-repeat; background-size:cover; background-position:center;
+  -webkit-mask-image:linear-gradient(90deg, transparent, #000 38%); mask-image:linear-gradient(90deg, transparent, #000 38%)}
+.cardArt.fb{background-size:auto 92%; background-position:72% 100%; filter:brightness(.18) drop-shadow(0 0 calc(var(--u)*6) rgba(255,192,105,.55)); opacity:.9}
+.howTip{display:grid; grid-template-columns:max(calc(var(--u)*60), 42px) 1fr; align-items:center; gap:calc(var(--u)*16);
+  padding:calc(var(--u)*12) calc(var(--u)*16); border:1px solid rgba(231,184,102,.35); border-radius:calc(var(--u)*10); background:rgba(14,20,38,.85)}
+.howTip svg{width:100%; height:auto; color:var(--gold); fill:currentColor; padding-right:calc(var(--u)*12); border-right:1px solid rgba(231,184,102,.35)}
+.howTip p{margin:0; font-weight:700; font-size:max(calc(var(--u)*20), 15px); line-height:1.45; color:var(--text)}
+#ovHowto .btn.cta{margin-top:calc(var(--u)*10)}
+.howNote{display:flex; align-items:center; gap:calc(var(--u)*12); font-size:max(calc(var(--u)*16), 13px); color:var(--muted); letter-spacing:.06em}
+.howNote::before, .howNote::after{content:""; flex:1; height:1px; background:rgba(231,184,102,.35)}
 
 /* ── ステージ選択 ── */
 #stageList{display:grid; gap:calc(var(--u)*9); overflow-y:auto; padding-right:calc(var(--u)*2)}
@@ -418,25 +504,69 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
   </div>
   <div id="safeProbe"></div>
 
+  <!-- アイコン（金の線画。fill は currentColor） -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><path d="M10.3 2h3.4l.5 2.6a7.6 7.6 0 0 1 1.9 1.1l2.5-.9 1.7 2.9-2 1.7a7.7 7.7 0 0 1 0 2.2l2 1.7-1.7 2.9-2.5-.9a7.6 7.6 0 0 1-1.9 1.1l-.5 2.6h-3.4l-.5-2.6a7.6 7.6 0 0 1-1.9-1.1l-2.5.9-1.7-2.9 2-1.7a7.7 7.7 0 0 1 0-2.2l-2-1.7 1.7-2.9 2.5.9a7.6 7.6 0 0 1 1.9-1.1zM12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8z" fill-rule="evenodd"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><path d="M12 1.8a10.2 10.2 0 1 1 0 20.4 10.2 10.2 0 0 1 0-20.4zm0 1.8a8.4 8.4 0 1 0 0 16.8 8.4 8.4 0 0 0 0-16.8z" fill-rule="evenodd"/><path d="M9 9.4a3 3 0 1 1 4.4 2.7c-.9.5-1.4 1-1.4 2v.6h-1.8v-.7c0-1.6.9-2.4 1.9-3a1.3 1.3 0 1 0-1.4-1.6z"/><circle cx="11.1" cy="17.1" r="1.2"/></symbol>
+    <symbol id="i-stick" viewBox="0 0 48 48"><circle cx="24" cy="11" r="7"/><rect x="21.6" y="16" width="4.8" height="16" rx="2"/><path d="M24 30c9 0 16 2.8 16 6.5S33 43 24 43 8 40.2 8 36.5 15 30 24 30zm0 3.4c-6.6 0-11.6 1.6-11.6 3.1s5 3.1 11.6 3.1 11.6-1.6 11.6-3.1-5-3.1-11.6-3.1z" fill-rule="evenodd"/></symbol>
+    <symbol id="i-switch" viewBox="0 0 48 48"><path d="M14 5h20a3 3 0 0 1 3 3v32a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3zm1 4v30h18V9z" fill-rule="evenodd"/><path d="M26 11l-8 15h6l-3 11 9-16h-6z"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 48 48"><path d="M4 4h10v3H7v7H4zM34 4h10v10h-3V7h-7zM4 34h3v7h7v3H4zM41 34h3v10H34v-3h7z"/><path d="M24 14c8.5 0 14.6 6.1 17 10-2.4 3.9-8.5 10-17 10S9.4 27.9 7 24c2.4-3.9 8.5-10 17-10zm0 3.2c-5.6 0-10.1 3.6-12.6 6.8 2.5 3.2 7 6.8 12.6 6.8s10.1-3.6 12.6-6.8c-2.5-3.2-7-6.8-12.6-6.8z" fill-rule="evenodd"/><circle cx="24" cy="24" r="4.6"/></symbol>
+    <symbol id="i-deer" viewBox="0 0 48 48"><ellipse cx="22" cy="26" rx="12" ry="6"/><path d="M12 29h3.2v13H12zM17 30h3v12h-3zM26 30h3v12h-3zM31 29h3.2v13H31z"/><path d="M30 24l3-12h4.4l-1.6 13z"/><ellipse cx="37" cy="11.6" rx="4.6" ry="3.2"/><path d="M35.4 8.6l-2.2-6.4M34.4 5.6l-4.2-1.8M38.4 8.6l2.2-6.4M39.4 5.6l4.2-1.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M10.6 22.6l-3.4-2 .6 3.6z"/></symbol>
+    <symbol id="i-watch" viewBox="0 0 48 48"><path d="M20 3h8v3h-2.4v3.2A16 16 0 1 1 22.4 9.2V6H20zm4 9.6a12.4 12.4 0 1 0 0 24.8 12.4 12.4 0 0 0 0-24.8z" fill-rule="evenodd"/><path d="M22.6 16h2.8v9.4l6 3.6-1.4 2.4-7.4-4.4z"/></symbol>
+    <symbol id="i-scope" viewBox="0 0 48 48"><path d="M13 12h7l1 8h6l1-8h7l5 20a8 8 0 1 1-15 3.6V26h-2v9.6A8 8 0 1 1 8 32zM13.2 30.8a4.4 4.4 0 1 0 .1 0zm21.6 0a4.4 4.4 0 1 0 .1 0z" fill-rule="evenodd"/></symbol>
+    <symbol id="i-route" viewBox="0 0 48 48"><ellipse cx="8" cy="35" rx="3.4" ry="5" transform="rotate(-14 8 35)"/><ellipse cx="15.4" cy="29" rx="3.2" ry="4.8" transform="rotate(-14 15.4 29)"/><circle cx="22" cy="36" r="1.6"/><circle cx="27" cy="33.6" r="1.6"/><circle cx="31.6" cy="30" r="1.6"/><path d="M38 6a7 7 0 0 1 7 7c0 5.6-7 13.4-7 13.4S31 18.6 31 13a7 7 0 0 1 7-7zm0 4.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6z" fill-rule="evenodd"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 48 48"><path d="M17 10h14l3 5h7a3 3 0 0 1 3 3v19a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V18a3 3 0 0 1 3-3h7zm7 9a8 8 0 1 0 0 16 8 8 0 0 0 0-16z" fill-rule="evenodd"/><circle cx="24" cy="27" r="4.4"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 48 48"><path d="M40 4l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/></symbol>
+  </svg>
+
   <!-- タイトル -->
   <section id="ovTitle" class="ov on">
     <div id="titleArt"></div><div id="titleShade"></div>
     <div class="pad">
-      <div id="titleMark">OPERATION / 聖夜無力化</div>
-      <h1 id="titleMain">クリスマス<br><em>粉砕</em>大作戦</h1>
-      <p id="titleLead"><span class="ph">いつからクリスマスは</span><span class="ph">恋人たちのものになった？</span><br><span class="ph">敏腕工作員を操り、</span><span class="ph">街のイルミネーションを消灯せよ。</span><br><span class="ph">恋愛至上主義に支配された</span><span class="ph">「日本のクリスマス」を</span><span class="ph">粉砕するのだ！</span></p>
-      <div id="brief">
-        <div><b>移動</b><span id="briefMove">左スティック</span></div>
-        <div><b>工作</b><span id="briefSab">近づいて右の工作ボタン</span></div>
-        <div><b>注意</b><span>視線に入り続けると発見される</span></div>
-        <div><b>時間</b><span>金色のトナカイを落とすと<span class="ph">制限時間 +10秒</span></span></div>
-      </div>
-      <button class="btn primary" id="btnStart">任務開始</button>
+      <h1 id="titleMain" aria-label="クリスマス粉砕大作戦"><span class="l1">クリスマス</span><span class="bar"></span><span class="l2">粉砕大作戦</span></h1>
+      <div class="goldRule"></div>
+      <div id="titleLead"><p class="q"><span class="ph">いつからクリスマスは</span><span class="ph">恋人たちのものになった？</span></p><p><span class="ph">敏腕工作員を操り、</span><span class="ph">街のイルミネーションを消灯せよ。</span></p><p><span class="ph">恋愛至上主義に支配された</span><br><span class="ph">「日本のクリスマス」を</span><span class="ph">粉砕するのだ！</span></p></div>
+      <button class="btn cta" id="btnStart"><span>任務開始</span><i class="tri" aria-hidden="true"></i></button>
       <div class="row">
-        <button class="btn" id="btnSelect">ステージ選択</button>
-        <button class="btn" id="btnSettings">設定</button>
+        <button class="btn sub" id="btnSelect"><svg class="ico" aria-hidden="true"><use href="#i-grid"/></svg>ステージ選択</button>
+        <button class="btn sub" id="btnSettings"><svg class="ico" aria-hidden="true"><use href="#i-gear"/></svg>設定</button>
       </div>
+      <button class="linkBtn" id="btnHowto"><svg class="ico" aria-hidden="true"><use href="#i-help"/></svg><span>遊び方</span></button>
       <div id="newEnding" class="newEnding" hidden>新しいエンディングが解放されました（ステージ選択から）</div>
+    </div>
+  </section>
+
+  <!-- 遊び方（タイトルと一時停止から開く） -->
+  <section id="ovHowto" class="ov" aria-labelledby="howHeading">
+    <div class="pad">
+      <div id="howHead">
+        <div id="howArt"></div>
+        <button id="btnHowBack">戻る</button>
+        <div id="howTitle"><h2 id="howHeading">遊び方</h2><small>HOW TO PLAY</small></div>
+        <p id="howQuote"><span class="ph">敏腕工作員を操り、</span><br><span class="ph">街のイルミネーションを</span><br><span class="ph">消灯せよ。</span></p>
+      </div>
+      <h3 class="secHead">基本操作</h3>
+      <div class="howCard"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#i-stick"/></svg>
+        <div><h3>移動</h3><p id="briefMove">画面下のスティックで移動</p></div>
+        <div class="cardArt" data-art="howto_move" data-fb="player_agent"></div></div>
+      <div class="howCard"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#i-switch"/></svg>
+        <div><h3>工作</h3><p id="briefSab">対象に近づいて「工作」ボタン</p></div>
+        <div class="cardArt" data-art="howto_sabotage" data-fb="player_agent_work"></div></div>
+      <h3 class="secHead">ルール</h3>
+      <div class="howCard"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#i-eye"/></svg>
+        <div><h3>注意</h3><p><span class="ph">視線に入り続けると</span><span class="ph">発見される</span></p></div>
+        <div class="cardArt" data-art="howto_caution" data-fb="npc_guard_check"></div></div>
+      <div class="howCard"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#i-deer"/></svg>
+        <div><h3>時間</h3><p><span class="ph">金色のトナカイを落とすと</span><span class="ph">制限時間 +10秒</span></p></div>
+        <div class="cardArt" data-art="howto_time"></div></div>
+      <h3 class="secHead">攻略のコツ</h3>
+      <div class="howTip"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#i-scope"/></svg><p>警備員の視線が外れた隙を狙おう</p></div>
+      <div class="howTip"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#i-route"/></svg><p>遠回りでも、安全なルートを選ぼう</p></div>
+      <div class="howTip"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#i-camera"/></svg><p><span class="ph">カップルの「3、2、1」に</span><span class="ph">合わせて工作すれば</span><span class="ph">ジャスト妨害</span></p></div>
+      <div class="howTip"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#i-deer"/><use href="#i-spark"/></svg><p>金色のトナカイは、時間延長のチャンス</p></div>
+      <button class="btn cta" id="btnHowGo"><span id="howGoLabel">タイトルへ戻る</span><i class="tri" aria-hidden="true"></i></button>
+      <div class="howNote">ゲーム中も一時停止メニューから確認できます</div>
     </div>
   </section>
 
@@ -531,6 +661,7 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
       <div class="eyebrow">PAUSED</div>
       <button class="btn primary" id="btnResume">作戦に戻る</button>
       <button class="btn" id="btnRetry3">最初からやり直す</button>
+      <button class="btn" id="btnHowto2">遊び方</button>
       <button class="btn" id="btnSettings2">設定</button>
       <button class="btn ghost" id="btnQuit">任務を中止する</button>
     </div>

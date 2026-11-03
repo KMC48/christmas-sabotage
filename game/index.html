@@ -222,10 +222,12 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
 #titleMain{font-family:var(--disp); font-size:calc(var(--u)*46); line-height:1.06; margin:0; text-wrap:balance;
   text-shadow:0 calc(var(--u)*4) calc(var(--u)*30) rgba(0,0,0,.9)}
 #titleMain em{font-style:normal; color:var(--cold); text-shadow:0 0 calc(var(--u)*26) rgba(220,238,255,.45)}
-#titleLead{font-size:calc(var(--u)*14); line-height:1.7; color:var(--muted); margin:0; max-width:34em}
-#brief{display:grid; gap:calc(var(--u)*7); margin:calc(var(--u)*2) 0 calc(var(--u)*4)}
-#brief div{display:flex; gap:calc(var(--u)*10); align-items:baseline; font-size:calc(var(--u)*13); color:var(--text)}
-#brief b{font-family:var(--hud); color:var(--gold); font-size:calc(var(--u)*11); letter-spacing:.16em; flex:0 0 calc(var(--u)*54)}
+/* 導入文と操作説明は大きめの文字に（スマホでも 15px 以上）。行の切れ目は .ph の単位 */
+#titleLead{font-size:max(calc(var(--u)*19), 15px); line-height:1.6; color:#B9C6DE; margin:0; max-width:34em}
+#titleLead .ph, #brief .ph{display:inline-block}
+#brief{display:grid; gap:calc(var(--u)*9); margin:calc(var(--u)*2) 0 calc(var(--u)*4)}
+#brief div{display:flex; gap:calc(var(--u)*10); align-items:baseline; font-size:max(calc(var(--u)*19), 15px); line-height:1.4; color:var(--text)}
+#brief b{font-family:var(--hud); color:var(--gold); font-size:max(calc(var(--u)*16), 13px); letter-spacing:.16em; flex:0 0 max(calc(var(--u)*62), 48px)}
 
 /* ── ステージ選択 ── */
 #stageList{display:grid; gap:calc(var(--u)*9); overflow-y:auto; padding-right:calc(var(--u)*2)}
@@ -422,12 +424,12 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
     <div class="pad">
       <div id="titleMark">OPERATION / 聖夜無力化</div>
       <h1 id="titleMain">クリスマス<br><em>粉砕</em>大作戦</h1>
-      <p id="titleLead">いつからクリスマスは恋人たちのものになった？<br>敏腕工作員を操り、街のイルミネーションを消灯せよ。<br>恋愛至上主義に支配された「日本のクリスマス」を粉砕するのだ！</p>
+      <p id="titleLead"><span class="ph">いつからクリスマスは</span><span class="ph">恋人たちのものになった？</span><br><span class="ph">敏腕工作員を操り、</span><span class="ph">街のイルミネーションを消灯せよ。</span><br><span class="ph">恋愛至上主義に支配された</span><span class="ph">「日本のクリスマス」を</span><span class="ph">粉砕するのだ！</span></p>
       <div id="brief">
         <div><b>移動</b><span id="briefMove">左スティック</span></div>
         <div><b>工作</b><span id="briefSab">近づいて右の工作ボタン</span></div>
         <div><b>注意</b><span>視線に入り続けると発見される</span></div>
-        <div><b>時間</b><span>金色のトナカイを落とすと制限時間 +10秒</span></div>
+        <div><b>時間</b><span>金色のトナカイを落とすと<span class="ph">制限時間 +10秒</span></span></div>
       </div>
       <button class="btn primary" id="btnStart">任務開始</button>
       <div class="row">

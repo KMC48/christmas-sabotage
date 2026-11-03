@@ -18,7 +18,8 @@ assert.equal(bundles.length, 2);
 assert.ok(bundles.every(m => m[1] === id));
 const html = read('www/index.html');
 assert.ok(!/fonts\.(googleapis|gstatic)\.com/.test(html));
-assert.ok(html.includes('恋愛至上主義に支配された「日本のクリスマス」を粉砕するのだ！'));
+// 導入文は句ごとに <span> で区切っているため、タグを除いて照合する
+assert.ok(html.replace(/<[^>]+>/g, '').includes('恋愛至上主義に支配された「日本のクリスマス」を粉砕するのだ！'));
 let count = 0;
 function walk(dir, rel = '') {
   for (const f of readdirSync(dir, { withFileTypes: true })) {

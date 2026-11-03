@@ -20,6 +20,10 @@ OPTIONAL_ASSETS = {
     '/assets/v4/' + name for name in (
         'prop_reindeer.png', 'prop_gift.png', 'prop_snowman.png',
         'prop_bluetree.png', 'player_agent_back.png', 'bg_stage6.jpg')
+} | {
+    # 遊び方の挿絵（ChatGPTへ発注中）。無い間は既存の立ち絵のシルエットで代用する
+    '/assets/v5/' + name for name in (
+        'howto_move.png', 'howto_sabotage.png', 'howto_caution.png', 'howto_time.png')
 }
 
 
@@ -83,7 +87,7 @@ def main():
                 cdp.send('DOM.enable')
                 cdp.send('CSS.enable')
                 document = cdp.send('DOM.getDocument')
-                label = cdp.send('DOM.querySelector', {'nodeId': document['root']['nodeId'], 'selector': '#brief b'})
+                label = cdp.send('DOM.querySelector', {'nodeId': document['root']['nodeId'], 'selector': '#titleLead .q'})
                 rendered = cdp.send('CSS.getPlatformFontsForNode', {'nodeId': label['nodeId']})['fonts']
                 assert any(f['isCustomFont'] and 'Noto Sans JP' in f['familyName'] and f['glyphCount'] > 0 for f in rendered), rendered
                 cdp.detach()

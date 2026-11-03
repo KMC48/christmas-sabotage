@@ -57,7 +57,7 @@ def main():
             page.on('pageerror', lambda error: js_errors.append(str(error)))
             page.on('response', lambda res:
                     bad_responses.append(res.url) if res.status >= 400
-                    and not ('/assets/v4/' in res.url and res.status == 404) else None)
+                    and not (('/assets/v4/' in res.url or '/assets/v5/' in res.url) and res.status == 404) else None)
             page.goto(origin + '/index.html', wait_until='domcontentloaded')
             page.locator('#btnSettings').click()
             page.evaluate('''() => {

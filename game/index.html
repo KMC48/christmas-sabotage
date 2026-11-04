@@ -26,6 +26,9 @@
   --text:#E7EEFB;
   --muted:#8FA0C0;
   --u:1px;             /* JSがフレーム幅から更新するスケール単位 */
+  /* 9:16 の枠は上下に黒帯が出る。安全領域のうち、枠に重なる分だけを使う（黒帯で足りる端末は 0） */
+  --safe-t:max(0px, calc(env(safe-area-inset-top) - (100dvh - min(100dvh, 100vw * 16 / 9)) / 2));
+  --safe-b:max(0px, calc(env(safe-area-inset-bottom) - (100dvh - min(100dvh, 100vw * 16 / 9)) / 2));
   --disp:"Dela Gothic One","Noto Sans JP",sans-serif;
   --hud:"Chakra Petch","Noto Sans JP","Chakra Petch Fallback",system-ui,sans-serif;
   --body:"Noto Sans JP",system-ui,sans-serif;
@@ -334,13 +337,13 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
 @keyframes introPan{from{transform:scale(1)}to{transform:scale(1.08)}}
 #introShade{position:absolute; inset:0; pointer-events:none;
   background:linear-gradient(180deg, rgba(4,6,12,.35) 0%, rgba(4,6,12,0) 16%, rgba(4,6,12,0) 52%, rgba(4,6,12,.72) 68%, rgba(4,6,12,.9) 100%)}
-#btnIntroSkip{position:absolute; right:calc(var(--u)*16); top:calc(var(--u)*16 + env(safe-area-inset-top)); z-index:1;
+#btnIntroSkip{position:absolute; right:calc(var(--u)*8); top:calc(var(--u)*8 + var(--safe-t)); z-index:1;
   display:flex; align-items:center; gap:calc(var(--u)*6); min-height:32px; padding:calc(var(--u)*5) calc(var(--u)*12);
   border:1px solid rgba(231,184,102,.4); border-radius:calc(var(--u)*6); background:rgba(10,14,28,.5);
   color:rgba(231,238,251,.85); font-family:var(--body); font-weight:500; font-size:max(calc(var(--u)*15), 13px); letter-spacing:.06em; cursor:pointer}
 #btnIntroSkip::after{content:"▶▶"; font-size:.65em; letter-spacing:-.12em; color:var(--gold)}
 #btnIntroSkip:focus-visible{outline:calc(var(--u)*2) solid var(--cold); outline-offset:calc(var(--u)*2)}
-#introText{position:absolute; left:calc(var(--u)*30); right:calc(var(--u)*30); bottom:15%; min-height:22%;
+#introText{position:absolute; left:calc(var(--u)*30); right:calc(var(--u)*30); bottom:calc(15% + var(--safe-b)); min-height:22%;
   display:flex; flex-direction:column; justify-content:flex-end; gap:calc(var(--u)*12); text-align:center; pointer-events:none}
 #introText p{margin:0; font-weight:500; font-size:max(calc(var(--u)*22), 15px); line-height:1.6; letter-spacing:.06em; color:#E7EEFB;
   text-shadow:0 calc(var(--u)*2) calc(var(--u)*10) rgba(0,0,0,.95); opacity:0; animation:introLine .9s ease-out forwards}
@@ -350,11 +353,11 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
 #introText .big{font-weight:800; font-size:max(calc(var(--u)*29), 20px); line-height:1.4; letter-spacing:.08em; color:#FFFFFF}
 #introText.done p{animation:none; opacity:1}
 @keyframes introLine{from{opacity:0; transform:translateY(calc(var(--u)*10))}to{opacity:1; transform:none}}
-#introPrompt{position:absolute; left:0; right:0; bottom:calc(6% + env(safe-area-inset-bottom)); text-align:center; pointer-events:none;
+#introPrompt{position:absolute; left:0; right:0; bottom:calc(6% + var(--safe-b)); text-align:center; pointer-events:none;
   font-family:var(--body); font-weight:500; font-size:max(calc(var(--u)*13), 12px); letter-spacing:.12em; color:var(--muted); opacity:0; transition:opacity .4s}
 #introPrompt.on{opacity:.8; animation:introBlink 2s ease-in-out .4s infinite}
 @keyframes introBlink{0%,100%{opacity:.8}50%{opacity:.4}}
-#introDots{position:absolute; left:0; right:0; bottom:calc(10.5% + env(safe-area-inset-bottom)); display:flex; justify-content:center; gap:calc(var(--u)*8); pointer-events:none}
+#introDots{position:absolute; left:0; right:0; bottom:calc(10.5% + var(--safe-b)); display:flex; justify-content:center; gap:calc(var(--u)*8); pointer-events:none}
 #introDots i{width:calc(var(--u)*7); height:calc(var(--u)*7); border-radius:50%; background:rgba(231,238,251,.25)}
 #introDots i.on{background:var(--gold)}
 
@@ -510,12 +513,12 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
   padding:calc(var(--u)*18) calc(var(--u)*18) calc(var(--u)*18);
   gap:calc(var(--u)*12); overflow:hidden;
 }
-#ovPrivacy .privacy-head{flex:0 0 auto; padding-top:env(safe-area-inset-top)}
+#ovPrivacy .privacy-head{flex:0 0 auto; padding-top:var(--safe-t)}
 #privacyFrame{
   flex:1 1 0; min-height:0; width:100%; border:1px solid var(--line);
   border-radius:calc(var(--u)*12); background:var(--night);
 }
-#btnPrivacyBack{flex:0 0 auto; margin-bottom:env(safe-area-inset-bottom)}
+#btnPrivacyBack{flex:0 0 auto; margin-bottom:var(--safe-b)}
 
 
 @media (prefers-reduced-motion: reduce){

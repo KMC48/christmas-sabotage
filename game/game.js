@@ -3409,11 +3409,11 @@
     document.querySelectorAll('[data-preset]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.preset === c.preset)));
     $('presetNote').textContent = c.preset === 'custom' ? '自由配置を使用中' : '';
     const drag = c.mode === 'drag';
-    /* 遊び方の説明。句ごとに区切り、言葉の途中で改行しない（文言は固定の文字列だけ） */
+    /* 遊び方の説明はスマホの操作だけ（PC のキー操作は開発用なので案内しない）。
+       句ごとに区切り、言葉の途中で改行しない（文言は固定の文字列だけ） */
     const ph = (...parts) => parts.map((s) => '<span class="ph">' + s + '</span>').join('');
-    $('briefMove').innerHTML = !touchMode ? ph('WASD／矢印キーで移動', '（スマホは' + (drag ? '主人公をドラッグ' : '画面下のスティック') + '）')
-      : drag ? ph('主人公を指でつかんで', '動かす') : ph('画面下のスティックで', '移動');
-    $('briefSab').innerHTML = !touchMode ? ph('対象に近づいて', 'スペースキー', '（スマホは「工作」ボタン）') : ph('対象に近づいて', '「工作」ボタン');
+    $('briefMove').innerHTML = drag ? ph('主人公を指でつかんで', '動かす') : ph('画面下のスティックで', '移動');
+    $('briefSab').innerHTML = ph('対象に近づいて', '「工作」ボタン');
     if ($('protoStats')) $('protoStats').innerHTML = protoStatsHtml();
   }
   function protoStatsHtml() {
@@ -3570,8 +3570,8 @@
     Audio2.startBgm();
   }
   function wireUI() {
-    on('btnStart', () => { if (save.introSeen) startStage(0); else openIntro(false); });
-    on('btnIntroReplay', () => openIntro(true));
+    on('btnStart', () => { if (save.introSeen) startStage(0); else openIntro(null); });
+    on('btnIntro', () => openIntro('ovTitle'));
     on('btnIntroSkip', finishIntro);
     /* スキップボタンの click もここへ伝わるが、その時点でイントロは終わっているので何もしない */
     $('ovIntro').addEventListener('click', introTap);
@@ -3638,7 +3638,7 @@
 
   /* ---------- イントロ ----------
      初回の「任務開始」で流し、そのままステージ1へ。最後まで見るかスキップしたら以後は出さない。
-     遊び方の「イントロをもう一度見る」からの再生は、終わると遊び方へ戻る。
+     タイトルの「イントロダクション」からの再生は、終わるとタイトルへ戻る。
      1場面＝タップ1回。行は順にフェードで出し、途中のタップは残りの行を一度に出す */
   const INTRO = [
     { bg: 1, lines: [['', ['毎年、', 'この季節が来るたびに思う。']]] },
@@ -3654,11 +3654,11 @@
   ];
   const INTRO_GAP = 0.6;    // 行と行の間（秒）
   const INTRO_FADE = 0.9;   // 1行のフェード（CSS の introLine と同じ）
-  let introRun = null;      // { i, replay, readyAt, lastTap }
+  let introRun = null;      // { i, back, readyAt, lastTap }。back＝見直しで戻る画面（初回は null）
   let introPromptTimer = 0;
-  function openIntro(replay) {
+  function openIntro(back) {
     releaseAll();
-    introRun = { i: -1, replay: !!replay, readyAt: 0, lastTap: 0 };
+    introRun = { i: -1, back: back || null, readyAt: 0, lastTap: 0 };
     $('introDots').innerHTML = INTRO.map(() => '<i></i>').join('');
     /* 背景のゆっくり寄る動きを最初から */
     ['introBg1', 'introBg2'].forEach((id) => { const b = $(id); b.classList.remove('on', 'pan'); void b.offsetWidth; });
@@ -3679,7 +3679,7 @@
     document.querySelectorAll('#introDots i').forEach((d, k) => d.classList.toggle('on', k === r.i));
     const lastScene = r.i === INTRO.length - 1;
     const pr = $('introPrompt');
-    pr.textContent = !lastScene ? 'タップで次へ ▼' : r.replay ? 'タップで戻る' : 'タップで任務開始 ▶';
+    pr.textContent = !lastScene ? 'タップで次へ ▼' : r.back ? 'タップで戻る' : 'タップで任務開始 ▶';
     pr.classList.remove('on');
     const wait = ((s.lines.length - 1) * INTRO_GAP + INTRO_FADE) * 1000;
     r.readyAt = performance.now() + wait;
@@ -3708,22 +3708,17 @@
     introRun = null;
     clearTimeout(introPromptTimer);
     if (!save.introSeen) { save.introSeen = true; putSave(); }
-    if (r.replay) backToHowto();
+    if (r.back) showOv(r.back);
     else startStage(0);
   }
-  /* Android の戻る：初回はタイトルへ（見たことにはしない）、見直しは遊び方へ */
+  /* Android の戻る：初回はタイトルへ（見たことにはしない）、見直しは開いた画面へ */
   function closeIntro() {
     const r = introRun;
     if (!r) return;
     introRun = null;
     clearTimeout(introPromptTimer);
-    if (r.replay) backToHowto();
+    if (r.back) showOv(r.back);
     else showTitle();
-  }
-  function backToHowto() {
-    showOv('ovHowto');
-    const ov = $('ovHowto');
-    ov.scrollTop = ov.scrollHeight;   // 押した「もう一度見る」の位置へ
   }
   function sw(id, key, after) {
     const el = $(id);

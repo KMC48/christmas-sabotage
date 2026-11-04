@@ -33,6 +33,8 @@
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{height:100%}
+/* 端末側の自動の文字拡大で、決めた改行が崩れないように */
+html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
 body{
   margin:0; background:var(--night); color:var(--text);
   font-family:var(--body);
@@ -219,22 +221,26 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
 #titleShade{position:absolute; inset:0;
   background:linear-gradient(180deg, rgba(10,14,28,.15) 0%, rgba(10,14,28,0) 26%, rgba(10,14,28,.55) 48%, rgba(10,14,28,.94) 62%, var(--night) 70%)}
 #ovTitle .pad{position:relative; justify-content:flex-end; align-items:center; text-align:center;
-  gap:calc(var(--u)*14); padding-bottom:calc(var(--u)*22)}
+  gap:calc(var(--u)*11); padding-bottom:calc(var(--u)*14)}
+#ovTitle .btn.cta{padding-block:calc(var(--u)*14)}
+#ovTitle .btn.sub{padding-block:calc(var(--u)*13)}
 #titleMain{margin:0 0 calc(var(--u)*2); font-family:var(--disp); font-weight:400; line-height:1; display:flex; flex-direction:column; align-items:center;
   transform:skewX(-6deg); filter:drop-shadow(0 calc(var(--u)*5) calc(var(--u)*10) rgba(0,0,0,.95))}
 #titleMain .l1, #titleMain .l2{display:block; white-space:nowrap; color:transparent; -webkit-background-clip:text; background-clip:text;
   background-image:linear-gradient(180deg, #FFFFFF 0%, #EEF3F9 34%, #A9B4C4 55%, #E6EDF6 78%, #B7C2D2 100%)}
-#titleMain .l1{font-size:calc(var(--u)*66); letter-spacing:.04em}
-#titleMain .l2{font-size:calc(var(--u)*90); letter-spacing:.01em}
-#titleMain .bar{display:block; width:calc(var(--u)*430); height:calc(var(--u)*3); margin:calc(var(--u)*4) 0 calc(var(--u)*6);
+#titleMain .l1{font-size:calc(var(--u)*56); letter-spacing:.04em}
+#titleMain .l2{font-size:calc(var(--u)*76); letter-spacing:.01em}
+#titleMain .bar{display:block; width:calc(var(--u)*370); height:calc(var(--u)*3); margin:calc(var(--u)*4) 0 calc(var(--u)*6);
   background:linear-gradient(90deg, transparent, var(--alert) 18%, #FF9AA6 50%, var(--alert) 82%, transparent);
   box-shadow:0 0 calc(var(--u)*12) rgba(255,74,92,.8)}
 .goldRule{width:78%; height:1px; flex:0 0 auto; background:linear-gradient(90deg, transparent, var(--gold) 50%, transparent); opacity:.75}
 /* 導入文は大きめの文字に（スマホでも 15px 以上）。行の切れ目は .ph の単位 */
-#titleLead{margin:0; display:grid; gap:calc(var(--u)*10); font-size:max(calc(var(--u)*20), 15px); line-height:1.5;
-  letter-spacing:.06em; color:#CBD5E6; text-shadow:0 1px calc(var(--u)*6) rgba(0,0,0,.9)}
+#titleLead{margin:0; display:grid; gap:calc(var(--u)*8); font-size:max(calc(var(--u)*19), 15px); line-height:1.5;
+  letter-spacing:.04em; color:#CBD5E6; text-shadow:0 1px calc(var(--u)*6) rgba(0,0,0,.9)}
 #titleLead p{margin:0}
-#titleLead .q{font-size:max(calc(var(--u)*27), 18px); font-weight:700; color:#F3E7CF}
+#titleLead .q{font-size:max(calc(var(--u)*24), 17px); font-weight:700; color:#F3E7CF}
+/* 説明は決めた4行で。行の途中では折り返さない */
+#titleLead .ln span{display:block; white-space:nowrap}
 #titleLead .ph, .howCard .ph, .howTip .ph{display:inline-block}
 /* 大きな赤いボタン（タイトル・遊び方で共通）。暖色イルミの金で縁取る */
 .btn.cta{position:relative; display:flex; align-items:center; justify-content:center; gap:calc(var(--u)*14);
@@ -252,13 +258,13 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
 #ovTitle{container-type:size}
 @container (max-height: 600px){
   #ovTitle .pad{gap:calc(var(--u)*9); padding-bottom:calc(var(--u)*12)}
-  #titleMain .l1{font-size:calc(var(--u)*58)}
-  #titleMain .l2{font-size:calc(var(--u)*80)}
+  #titleMain .l1{font-size:calc(var(--u)*52)}
+  #titleMain .l2{font-size:calc(var(--u)*70)}
   #titleLead{gap:calc(var(--u)*4); line-height:1.4}
   .goldRule{display:none}
   #ovTitle .btn.cta{padding-block:calc(var(--u)*12)}
   #ovTitle .btn.sub{padding-block:calc(var(--u)*11)}
-  .linkBtn{padding-block:calc(var(--u)*4)}
+  .linkBtn, #ovTitle .links .linkBtn{padding-block:calc(var(--u)*3)}
 }
 .btn.sub{display:flex; align-items:center; justify-content:center; gap:calc(var(--u)*12);
   font-size:max(calc(var(--u)*21), 15px); letter-spacing:.06em; padding:calc(var(--u)*16) calc(var(--u)*10);
@@ -267,6 +273,8 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
 .linkBtn{display:inline-flex; align-items:center; gap:calc(var(--u)*10); background:none; border:0; padding:calc(var(--u)*8) calc(var(--u)*12);
   color:var(--text); font-family:var(--body); font-weight:700; font-size:max(calc(var(--u)*21), 15px); letter-spacing:.08em; cursor:pointer}
 .linkBtn span{border-bottom:1px solid var(--gold); padding-bottom:calc(var(--u)*2)}
+#ovTitle .links{display:flex; flex-direction:column; align-items:center; gap:0; margin-top:calc(var(--u)*-6)}
+#ovTitle .links .linkBtn{padding-block:calc(var(--u)*5)}
 .linkBtn:focus-visible{outline:calc(var(--u)*2) solid var(--cold); outline-offset:calc(var(--u)*2)}
 
 /* ── 遊び方 ── */
@@ -288,8 +296,9 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
 #howTitle small{font-family:var(--hud); font-weight:600; font-size:max(calc(var(--u)*13), 11px); letter-spacing:.4em; color:var(--muted)}
 #howQuote{position:absolute; right:calc(var(--u)*26); top:calc(var(--u)*150); width:calc(var(--u)*290); margin:0;
   padding:calc(var(--u)*16) calc(var(--u)*14); border:1px solid rgba(231,184,102,.6); border-radius:calc(var(--u)*6);
-  background:rgba(10,14,28,.78); text-align:center; font-weight:700; font-size:max(calc(var(--u)*23), 15px); line-height:1.6; color:#F3E7CF;
+  background:rgba(10,14,28,.78); text-align:center; font-weight:700; font-size:max(calc(var(--u)*21), 15px); line-height:1.6; color:#F3E7CF;
   box-shadow:inset 0 0 0 calc(var(--u)*4) rgba(10,14,28,.9), inset 0 0 0 calc(var(--u)*5) rgba(231,184,102,.25)}
+#howQuote span{display:block; white-space:nowrap}   /* 決めた3行で */
 .secHead{display:flex; align-items:center; gap:calc(var(--u)*14); margin:calc(var(--u)*10) 0 calc(var(--u)*2);
   font-family:var(--disp); font-weight:400; font-size:max(calc(var(--u)*36), 22px); letter-spacing:.1em; color:var(--text)}
 .secHead::before, .secHead::after{content:""; flex:1; height:1px; background:linear-gradient(90deg, transparent, var(--gold))}
@@ -314,7 +323,6 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
 #ovHowto .btn.cta{margin-top:calc(var(--u)*10)}
 .howNote{display:flex; align-items:center; gap:calc(var(--u)*12); font-size:max(calc(var(--u)*16), 13px); color:var(--muted); letter-spacing:.06em}
 .howNote::before, .howNote::after{content:""; flex:1; height:1px; background:rgba(231,184,102,.35)}
-#btnIntroReplay{align-self:center}
 
 /* ── イントロ（初回の任務開始で1回。遊び方から見直せる）。画面は9:16固定なので背景は全体を見せる ── */
 #ovIntro{background:#04060C; z-index:6; overflow:hidden; touch-action:none; cursor:pointer}
@@ -326,11 +334,11 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
 @keyframes introPan{from{transform:scale(1)}to{transform:scale(1.08)}}
 #introShade{position:absolute; inset:0; pointer-events:none;
   background:linear-gradient(180deg, rgba(4,6,12,.35) 0%, rgba(4,6,12,0) 16%, rgba(4,6,12,0) 52%, rgba(4,6,12,.72) 68%, rgba(4,6,12,.9) 100%)}
-#btnIntroSkip{position:absolute; right:calc(var(--u)*18); top:calc(var(--u)*18 + env(safe-area-inset-top)); z-index:1;
-  display:flex; align-items:center; gap:calc(var(--u)*8); padding:calc(var(--u)*9) calc(var(--u)*16);
-  border:1px solid rgba(231,184,102,.7); border-radius:calc(var(--u)*8); background:rgba(10,14,28,.7);
-  color:var(--text); font-family:var(--body); font-weight:700; font-size:max(calc(var(--u)*19), 15px); cursor:pointer}
-#btnIntroSkip::after{content:"▶▶"; font-size:.7em; letter-spacing:-.12em; color:var(--gold)}
+#btnIntroSkip{position:absolute; right:calc(var(--u)*16); top:calc(var(--u)*16 + env(safe-area-inset-top)); z-index:1;
+  display:flex; align-items:center; gap:calc(var(--u)*6); min-height:32px; padding:calc(var(--u)*5) calc(var(--u)*12);
+  border:1px solid rgba(231,184,102,.4); border-radius:calc(var(--u)*6); background:rgba(10,14,28,.5);
+  color:rgba(231,238,251,.85); font-family:var(--body); font-weight:500; font-size:max(calc(var(--u)*15), 13px); letter-spacing:.06em; cursor:pointer}
+#btnIntroSkip::after{content:"▶▶"; font-size:.65em; letter-spacing:-.12em; color:var(--gold)}
 #btnIntroSkip:focus-visible{outline:calc(var(--u)*2) solid var(--cold); outline-offset:calc(var(--u)*2)}
 #introText{position:absolute; left:calc(var(--u)*30); right:calc(var(--u)*30); bottom:15%; min-height:22%;
   display:flex; flex-direction:column; justify-content:flex-end; gap:calc(var(--u)*12); text-align:center; pointer-events:none}
@@ -338,17 +346,14 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
   text-shadow:0 calc(var(--u)*2) calc(var(--u)*10) rgba(0,0,0,.95); opacity:0; animation:introLine .9s ease-out forwards}
 #introText .ph{display:inline-block}
 #introText .q{font-weight:700; font-size:max(calc(var(--u)*27), 17px); color:#F3E7CF}
-/* キメの台詞はロゴと同じ書体で */
-#introText .big{font-family:var(--disp); font-weight:400; font-size:max(calc(var(--u)*46), 26px); line-height:1.25; letter-spacing:.08em; color:var(--cold);
-  text-shadow:0 0 calc(var(--u)*18) rgba(220,238,255,.35), 0 calc(var(--u)*3) calc(var(--u)*12) rgba(0,0,0,.95)}
-#introText .big::after{content:""; display:block; width:56%; height:calc(var(--u)*3); margin:calc(var(--u)*8) auto 0;
-  background:linear-gradient(90deg, transparent, var(--alert), transparent); box-shadow:0 0 calc(var(--u)*10) rgba(255,74,92,.7)}
+/* キメの台詞：書体は地の文と同じまま、太く少し大きく */
+#introText .big{font-weight:800; font-size:max(calc(var(--u)*29), 20px); line-height:1.4; letter-spacing:.08em; color:#FFFFFF}
 #introText.done p{animation:none; opacity:1}
 @keyframes introLine{from{opacity:0; transform:translateY(calc(var(--u)*10))}to{opacity:1; transform:none}}
 #introPrompt{position:absolute; left:0; right:0; bottom:calc(6% + env(safe-area-inset-bottom)); text-align:center; pointer-events:none;
-  font-family:var(--body); font-weight:700; font-size:max(calc(var(--u)*17), 15px); letter-spacing:.14em; color:var(--gold); opacity:0; transition:opacity .4s}
-#introPrompt.on{opacity:1; animation:introBlink 1.6s ease-in-out .4s infinite}
-@keyframes introBlink{0%,100%{opacity:1}50%{opacity:.45}}
+  font-family:var(--body); font-weight:500; font-size:max(calc(var(--u)*13), 12px); letter-spacing:.12em; color:var(--muted); opacity:0; transition:opacity .4s}
+#introPrompt.on{opacity:.8; animation:introBlink 2s ease-in-out .4s infinite}
+@keyframes introBlink{0%,100%{opacity:.8}50%{opacity:.4}}
 #introDots{position:absolute; left:0; right:0; bottom:calc(10.5% + env(safe-area-inset-bottom)); display:flex; justify-content:center; gap:calc(var(--u)*8); pointer-events:none}
 #introDots i{width:calc(var(--u)*7); height:calc(var(--u)*7); border-radius:50%; background:rgba(231,238,251,.25)}
 #introDots i.on{background:var(--gold)}
@@ -578,13 +583,16 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
     <div class="pad">
       <h1 id="titleMain" aria-label="クリスマス粉砕大作戦"><span class="l1">クリスマス</span><span class="bar"></span><span class="l2">粉砕大作戦</span></h1>
       <div class="goldRule"></div>
-      <div id="titleLead"><p class="q"><span class="ph">いつからクリスマスは</span><span class="ph">恋人たちのものになった？</span></p><p><span class="ph">敏腕工作員を操り、</span><span class="ph">街のイルミネーションを消灯せよ。</span></p><p><span class="ph">恋愛至上主義に支配された</span><br><span class="ph">「日本のクリスマス」を</span><span class="ph">粉砕するのだ！</span></p></div>
+      <div id="titleLead"><p class="q"><span class="ph">いつからクリスマスは</span><span class="ph">恋人たちのものになった？</span></p><p class="ln"><span>敏腕工作員を操り、</span><span>街のイルミネーションを消灯せよ。</span><span>恋愛至上主義に支配された</span><span>「日本のクリスマス」を粉砕するのだ！</span></p></div>
       <button class="btn cta" id="btnStart"><span>任務開始</span><i class="tri" aria-hidden="true"></i></button>
       <div class="row">
         <button class="btn sub" id="btnSelect"><svg class="ico" aria-hidden="true"><use href="#i-grid"/></svg>ステージ選択</button>
         <button class="btn sub" id="btnSettings"><svg class="ico" aria-hidden="true"><use href="#i-gear"/></svg>設定</button>
       </div>
-      <button class="linkBtn" id="btnHowto"><svg class="ico" aria-hidden="true"><use href="#i-help"/></svg><span>遊び方</span></button>
+      <div class="links">
+        <button class="linkBtn" id="btnHowto"><svg class="ico" aria-hidden="true"><use href="#i-help"/></svg><span>遊び方</span></button>
+        <button class="linkBtn" id="btnIntro"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg><span>イントロダクション</span></button>
+      </div>
       <div id="newEnding" class="newEnding" hidden>新しいエンディングが解放されました（ステージ選択から）</div>
     </div>
   </section>
@@ -596,7 +604,7 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
         <div id="howArt"></div>
         <button id="btnHowBack">戻る</button>
         <div id="howTitle"><h2 id="howHeading">遊び方</h2><small>HOW TO PLAY</small></div>
-        <p id="howQuote"><span class="ph">敏腕工作員を操り、</span><br><span class="ph">街のイルミネーションを</span><br><span class="ph">消灯せよ。</span></p>
+        <p id="howQuote"><span>敏腕工作員を操り、</span><span>街のイルミネーションを</span><span>消灯せよ。</span></p>
       </div>
       <h3 class="secHead">基本操作</h3>
       <div class="howCard"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#i-stick"/></svg>
@@ -617,7 +625,6 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
       <div class="howTip"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#i-route"/></svg><p><span class="ph">遠回りでも、</span><span class="ph">安全なルートを選ぼう</span></p></div>
       <div class="howTip"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#i-camera"/></svg><p><span class="ph">カップルの「3、2、1」に</span><span class="ph">合わせて工作すれば</span><span class="ph">ジャスト妨害</span></p></div>
       <div class="howTip"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#i-deer"/><use href="#i-spark"/></svg><p><span class="ph">金色のトナカイは、</span><span class="ph">時間延長のチャンス</span></p></div>
-      <button class="linkBtn" id="btnIntroReplay"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg><span>イントロをもう一度見る</span></button>
       <button class="btn cta" id="btnHowGo"><span id="howGoLabel">タイトルへ戻る</span><i class="tri" aria-hidden="true"></i></button>
       <div class="howNote">ゲーム中も一時停止メニューから確認できます</div>
     </div>

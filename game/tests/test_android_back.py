@@ -265,20 +265,19 @@ class AndroidBackTests(unittest.TestCase):
         self.assertTrue(self.page.evaluate('XMAS.save.introSeen'))
         self.assertEqual(self.page.evaluate('nativeTest.exits'), 0)
 
-    def test_intro_replay_from_howto_returns_to_howto(self):
+    def test_intro_replay_from_title_returns_to_title(self):
         self.seen_intro()
-        self.click('btnHowto')
-        self.click('btnIntroReplay')
+        self.click('btnIntro')
         self.overlay('ovIntro')
         self.assertEqual(self.page.evaluate('XMAS.G.state'), 'title')
         self.back()
-        self.overlay('ovHowto')
-        self.click('btnIntroReplay')
-        self.click('btnIntroSkip')
-        self.overlay('ovHowto')
-        self.assertEqual(self.page.evaluate('XMAS.G.state'), 'title')
-        self.click('btnHowGo')
         self.overlay('ovTitle')
+        self.click('btnIntro')
+        self.click('btnIntroSkip')
+        self.overlay('ovTitle')
+        self.assertEqual(self.page.evaluate('XMAS.G.state'), 'title')
+        self.assertIsNone(self.page.evaluate('XMAS.G.stage'))
+        self.assertEqual(self.page.evaluate('nativeTest.exits'), 0)
 
     def test_title_settings_returns_to_title(self):
         self.click('btnSettings')

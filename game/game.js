@@ -3147,10 +3147,10 @@
     const b = $('newEnding');
     if (!b) return;
     if (save.specialUnlocked && !save.specialSeen) {
-      b.textContent = '特別ステージ「青の回廊」が出現しました（ステージ選択から）';
+      b.innerHTML = '<span class="ph">特別ステージ「青の回廊」が出現しました</span><span class="ph">（ステージ選択から）</span>';
       b.hidden = false;
     } else if (save.allClearEndingUnlocked && !save.allClearEndingSeen) {
-      b.textContent = '新しいエンディングが解放されました（ステージ選択から）';
+      b.innerHTML = '<span class="ph">新しいエンディングが解放されました</span><span class="ph">（ステージ選択から）</span>';
       b.hidden = false;
     } else b.hidden = true;
   }

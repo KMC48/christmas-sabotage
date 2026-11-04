@@ -102,6 +102,14 @@ class AndroidBackTests(unittest.TestCase):
     def begin(self):
         self.page.evaluate('XMAS.beginPlay(0)')
 
+    def seen_intro(self):
+        # 2回目以降のプレイヤー：任務開始でイントロを出さない
+        self.page.evaluate('XMAS.save.introSeen = true')
+
+    def tap_intro(self):
+        self.page.wait_for_timeout(260)
+        self.page.locator('#ovIntro').click(position={'x': 195, 'y': 400})
+
     def stored(self):
         return self.page.evaluate('localStorage.getItem(XMAS.SKEY)')
 
@@ -154,6 +162,7 @@ class AndroidBackTests(unittest.TestCase):
         self.assertEqual(self.page.evaluate('XMAS.G.doneCount'), 1)
 
     def test_ready_timer_cannot_resume_paused_game(self):
+        self.seen_intro()
         self.click('btnStart')
         self.back(wait=False)
         self.overlay('ovPause')
@@ -223,6 +232,53 @@ class AndroidBackTests(unittest.TestCase):
         self.assertEqual(self.page.evaluate('XMAS.G.state'), 'playing')
         self.assertEqual(self.snapshot(), before)
         self.assertEqual(self.page.evaluate('nativeTest.exits'), 0)
+
+    def test_first_start_plays_intro_then_stage_one_only_once(self):
+        self.click('btnStart')
+        self.overlay('ovIntro')
+        self.assertEqual(self.page.locator('#introDots i').count(), 10)
+        scenes = 0
+        while self.page.locator('#ovIntro').evaluate("e => e.classList.contains('on')"):
+            self.assertLess(scenes, 30)
+            self.tap_intro()   # 途中なら残りの行を出す、出そろっていれば次の場面へ
+            scenes += 1
+        self.overlay(None)
+        self.assertEqual(self.page.evaluate('XMAS.G.state'), 'ready')
+        self.assertEqual(self.page.evaluate('XMAS.G.stageIdx'), 0)
+        self.assertTrue(json.loads(self.stored())['introSeen'])
+        self.back()
+        self.click('btnQuit')
+        self.click('btnStart')
+        self.overlay(None)
+        self.assertEqual(self.page.evaluate('XMAS.G.state'), 'ready')
+
+    def test_intro_skip_and_android_back(self):
+        self.click('btnStart')
+        self.back()
+        self.overlay('ovTitle')
+        self.assertFalse(self.page.evaluate('XMAS.save.introSeen'))
+        self.click('btnStart')
+        self.overlay('ovIntro')
+        self.click('btnIntroSkip')
+        self.overlay(None)
+        self.assertEqual(self.page.evaluate('XMAS.G.state'), 'ready')
+        self.assertTrue(self.page.evaluate('XMAS.save.introSeen'))
+        self.assertEqual(self.page.evaluate('nativeTest.exits'), 0)
+
+    def test_intro_replay_from_howto_returns_to_howto(self):
+        self.seen_intro()
+        self.click('btnHowto')
+        self.click('btnIntroReplay')
+        self.overlay('ovIntro')
+        self.assertEqual(self.page.evaluate('XMAS.G.state'), 'title')
+        self.back()
+        self.overlay('ovHowto')
+        self.click('btnIntroReplay')
+        self.click('btnIntroSkip')
+        self.overlay('ovHowto')
+        self.assertEqual(self.page.evaluate('XMAS.G.state'), 'title')
+        self.click('btnHowGo')
+        self.overlay('ovTitle')
 
     def test_title_settings_returns_to_title(self):
         self.click('btnSettings')
@@ -342,6 +398,7 @@ class AndroidBackTests(unittest.TestCase):
         self.assertEqual(self.stored(), before)
 
     def test_background_ready_and_resume_stay_paused(self):
+        self.seen_intro()
         self.click('btnStart')
         self.page.evaluate("nativeTest.emit('pause')")
         self.overlay('ovPause')
@@ -364,11 +421,13 @@ class AndroidBackTests(unittest.TestCase):
             with self.subTest(platform=platform, missing=missing):
                 self.load(platform, native, missing)
                 self.assertEqual(self.page.evaluate('nativeTest.listeners'), {})
+                self.seen_intro()
                 self.click('btnStart')
                 self.assertEqual(self.page.evaluate('XMAS.G.state'), 'ready')
 
     def test_listener_rejection_does_not_crash_game(self):
         self.load(reject_listener=True)
+        self.seen_intro()
         self.click('btnStart')
         self.assertEqual(self.page.evaluate('XMAS.G.state'), 'ready')
 

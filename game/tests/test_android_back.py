@@ -252,6 +252,25 @@ class AndroidBackTests(unittest.TestCase):
         self.overlay(None)
         self.assertEqual(self.page.evaluate('XMAS.G.state'), 'ready')
 
+    def test_start_resumes_from_first_uncleared_stage(self):
+        self.seen_intro()
+        self.win(0)
+        self.back()             # 結果
+        self.back()             # ステージ選択
+        self.back()             # タイトル
+        self.overlay('ovTitle')
+        self.click('btnStart')
+        self.assertEqual(self.page.evaluate('XMAS.G.stageIdx'), 1)
+        self.assertEqual(self.page.evaluate('XMAS.G.state'), 'ready')
+        # 全5ステージをクリア済みならステージ1から
+        self.page.evaluate('''() => {
+          XMAS.STAGES.filter(s => !s.special).forEach(s => { XMAS.save.best4[s.id] = 1; });
+        }''')
+        self.back()
+        self.click('btnQuit')
+        self.click('btnStart')
+        self.assertEqual(self.page.evaluate('XMAS.G.stageIdx'), 0)
+
     def test_intro_skip_and_android_back(self):
         self.click('btnStart')
         self.back()

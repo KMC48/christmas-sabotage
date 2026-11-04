@@ -612,6 +612,11 @@
   /* クリアの証跡。旧版の記録も「そのステージをクリアした」ことの証拠として使う */
   function cleared(id) { return !!(save.best[id] || save.best2[id] || save.best3[id] || save.best4[id]); }
   function allCleared() { return NORMAL.every((st) => cleared(st.id)); }
+  /* 「任務開始」で始めるステージ：まだクリアしていない最初のステージ。全部クリア済みならステージ1へ戻る */
+  function nextStageIdx() {
+    const st = NORMAL.find((s) => !cleared(s.id));
+    return st ? STAGES.indexOf(st) : STAGES.indexOf(NORMAL[0]);
+  }
 
   function loadSave() {
     let had = false;
@@ -3570,7 +3575,7 @@
     Audio2.startBgm();
   }
   function wireUI() {
-    on('btnStart', () => { if (save.introSeen) startStage(0); else openIntro(null); });
+    on('btnStart', () => { if (save.introSeen) startStage(nextStageIdx()); else openIntro(null); });
     on('btnIntro', () => openIntro('ovTitle'));
     on('btnIntroSkip', finishIntro);
     /* スキップボタンの click もここへ伝わるが、その時点でイントロは終わっているので何もしない */

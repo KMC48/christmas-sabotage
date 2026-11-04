@@ -435,6 +435,9 @@
     howto_sabotage: 'assets/v5/howto_sabotage.png',
     howto_caution:  'assets/v5/howto_caution.png',
     howto_time:     'assets/v5/howto_time.png',
+    /* イントロの背景（CSS の背景として使う。ここでは先読みだけ） */
+    intro_city:     'assets/intro/intro_city_lovers.jpg',
+    intro_agent:    'assets/intro/intro_agent_back.jpg',
   };
 
   /* スプライトの不透明部分の外接矩形 [x, y, w, h]。
@@ -598,6 +601,7 @@
     lite: false, awards: {},
     controls: null,  // { v, mode:'stick'|'drag', preset:'br'|'bc'|'bl'|'custom', stick:[nx,ny], btn:[nx,ny] }
     tips: {},        // 1回だけの説明を見たか
+    introSeen: false, // イントロを最後まで見たか、スキップしたか（以後の任務開始では出さない）
     proto: {},       // 操作方式ごとの比較メモ（端末内だけ）
   };
   const CONTROL_MODES = ['stick', 'drag'];
@@ -633,6 +637,7 @@
     if (save.allClearEndingUnlocked) save.specialUnlocked = true;
     save.specialUnlocked = !!save.specialUnlocked;
     save.specialSeen = !!save.specialSeen;
+    save.introSeen = !!save.introSeen;
   }
 
   /* 旧「左利き」の移行。名前ではなく、旧コードが実際に移動へ割り当てていた側を引き継ぐ：
@@ -3047,7 +3052,7 @@
   }
 
   /* ---------- 画面遷移 ---------- */
-  const OVS = ['ovTitle', 'ovSelect', 'ovResult', 'ovFail', 'ovPause', 'ovSettings', 'ovPrivacy', 'ovLayout', 'ovEnding', 'ovExit', 'ovHowto'];
+  const OVS = ['ovTitle', 'ovSelect', 'ovResult', 'ovFail', 'ovPause', 'ovSettings', 'ovPrivacy', 'ovLayout', 'ovEnding', 'ovExit', 'ovHowto', 'ovIntro'];
   function showOv(id) {
     OVS.forEach((o) => $(o).classList.toggle('on', o === id));
     ui.hud.classList.toggle('hide', !!id);
@@ -3343,6 +3348,11 @@
 
   window.addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
+    if (introRun) {
+      if ((k === ' ' || k === 'enter' || k === 'arrowright') && !e.repeat) { e.preventDefault(); introTap(); }
+      else if (k === 'escape') finishIntro();
+      return;
+    }
     if (G.ending) {
       if ((k === ' ' || k === 'enter') && !e.repeat) { e.preventDefault(); skipEnding(); }
       return;
@@ -3494,6 +3504,7 @@
       case 'ovPrivacy': showOv('ovSettings'); $('btnPrivacy').focus(); return;
       case 'ovSettings': showOv(settingsBack); return;
       case 'ovHowto': closeHowto(); return;
+      case 'ovIntro': closeIntro(); return;
       case 'ovEnding': finishEnding(); return;
       case 'ovPause': resumePlay(); return;
       case 'ovResult': case 'ovFail': showSelect(); return;
@@ -3559,7 +3570,11 @@
     Audio2.startBgm();
   }
   function wireUI() {
-    on('btnStart', () => startStage(0));
+    on('btnStart', () => { if (save.introSeen) startStage(0); else openIntro(false); });
+    on('btnIntroReplay', () => openIntro(true));
+    on('btnIntroSkip', finishIntro);
+    /* スキップボタンの click もここへ伝わるが、その時点でイントロは終わっているので何もしない */
+    $('ovIntro').addEventListener('click', introTap);
     on('btnSelect', showSelect);
     on('btnSelBack', showTitle);
     on('btnSettings', () => { settingsBack = 'ovTitle'; refreshControlUI(); showOv('ovSettings'); });
@@ -3620,6 +3635,96 @@
     $('ovHowto').scrollTop = 0;
   }
   function closeHowto() { showOv(howtoBack); }
+
+  /* ---------- イントロ ----------
+     初回の「任務開始」で流し、そのままステージ1へ。最後まで見るかスキップしたら以後は出さない。
+     遊び方の「イントロをもう一度見る」からの再生は、終わると遊び方へ戻る。
+     1場面＝タップ1回。行は順にフェードで出し、途中のタップは残りの行を一度に出す */
+  const INTRO = [
+    { bg: 1, lines: [['', ['毎年、', 'この季節が来るたびに思う。']]] },
+    { bg: 1, lines: [['q', ['「いつからクリスマスは、', '恋人たちのものになったのだ？」']]] },
+    { bg: 1, lines: [['', ['街を埋め尽くす、', 'カップル向けの広告。']], ['', ['恋人たちを照らす、', 'まばゆいイルミネーション。']]] },
+    { bg: 1, lines: [['', ['独り身には、', '歩いているだけで', '肩身の狭い季節だ。']]] },
+    { bg: 1, lines: [['', ['この不安定な国際情勢の中、']], ['', ['恋愛に浮かれていていいのか、', '日本。']]] },
+    { bg: 1, lines: [['', ['……もはや、', '見過ごすわけにはいかない。']]] },
+    { bg: 2, lines: [['', ['恋愛至上主義に支配された']], ['', ['「日本のクリスマス」を', '粉砕するため、']], ['', ['俺は、', 'ある男に', '極秘の依頼を出した。']]] },
+    { bg: 2, lines: [['', ['どんな警備もすり抜け、', '任務を遂行する――']], ['big', ['敏腕工作員だ。']]] },
+    { bg: 2, lines: [['big', ['さあ、作戦開始だ。']], ['', ['やつを動かし、', '街のイルミネーションを', '消灯せよ。']]] },
+    { bg: 2, lines: [['', ['誰もが堂々と過ごせる', 'クリスマスを、']], ['q', ['俺たちの手で', '取り戻すぞ……！']]] },
+  ];
+  const INTRO_GAP = 0.6;    // 行と行の間（秒）
+  const INTRO_FADE = 0.9;   // 1行のフェード（CSS の introLine と同じ）
+  let introRun = null;      // { i, replay, readyAt, lastTap }
+  let introPromptTimer = 0;
+  function openIntro(replay) {
+    releaseAll();
+    introRun = { i: -1, replay: !!replay, readyAt: 0, lastTap: 0 };
+    $('introDots').innerHTML = INTRO.map(() => '<i></i>').join('');
+    /* 背景のゆっくり寄る動きを最初から */
+    ['introBg1', 'introBg2'].forEach((id) => { const b = $(id); b.classList.remove('on', 'pan'); void b.offsetWidth; });
+    showOv('ovIntro');
+    introNext();
+  }
+  function introNext() {
+    const r = introRun;
+    const s = INTRO[++r.i];
+    if (!s) { finishIntro(); return; }
+    const bg = $('introBg' + s.bg);
+    if (!bg.classList.contains('on')) { $('introBg' + (3 - s.bg)).classList.remove('on'); bg.classList.add('on', 'pan'); }
+    const box = $('introText');
+    box.classList.remove('done');
+    box.innerHTML = s.lines.map((l, k) =>
+      '<p class="' + l[0] + '" style="animation-delay:' + (k * INTRO_GAP) + 's">'
+      + l[1].map((ph) => '<span class="ph">' + ph + '</span>').join('') + '</p>').join('');
+    document.querySelectorAll('#introDots i').forEach((d, k) => d.classList.toggle('on', k === r.i));
+    const lastScene = r.i === INTRO.length - 1;
+    const pr = $('introPrompt');
+    pr.textContent = !lastScene ? 'タップで次へ ▼' : r.replay ? 'タップで戻る' : 'タップで任務開始 ▶';
+    pr.classList.remove('on');
+    const wait = ((s.lines.length - 1) * INTRO_GAP + INTRO_FADE) * 1000;
+    r.readyAt = performance.now() + wait;
+    clearTimeout(introPromptTimer);
+    introPromptTimer = setTimeout(() => pr.classList.add('on'), wait);
+  }
+  function introTap() {
+    const r = introRun;
+    if (!r) return;
+    const now = performance.now();
+    if (now - r.lastTap < 250) return;   // 連打で読み飛ばさない
+    r.lastTap = now;
+    if (now < r.readyAt) {
+      $('introText').classList.add('done');
+      r.readyAt = now;
+      clearTimeout(introPromptTimer);
+      $('introPrompt').classList.add('on');
+      return;
+    }
+    introNext();
+  }
+  /* 最後まで見た／スキップした：初回はそのまま任務へ */
+  function finishIntro() {
+    const r = introRun;
+    if (!r) return;
+    introRun = null;
+    clearTimeout(introPromptTimer);
+    if (!save.introSeen) { save.introSeen = true; putSave(); }
+    if (r.replay) backToHowto();
+    else startStage(0);
+  }
+  /* Android の戻る：初回はタイトルへ（見たことにはしない）、見直しは遊び方へ */
+  function closeIntro() {
+    const r = introRun;
+    if (!r) return;
+    introRun = null;
+    clearTimeout(introPromptTimer);
+    if (r.replay) backToHowto();
+    else showTitle();
+  }
+  function backToHowto() {
+    showOv('ovHowto');
+    const ov = $('ovHowto');
+    ov.scrollTop = ov.scrollHeight;   // 押した「もう一度見る」の位置へ
+  }
   function sw(id, key, after) {
     const el = $(id);
     el.setAttribute('aria-checked', String(!!save[key]));

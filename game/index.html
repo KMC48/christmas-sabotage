@@ -314,6 +314,44 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
 #ovHowto .btn.cta{margin-top:calc(var(--u)*10)}
 .howNote{display:flex; align-items:center; gap:calc(var(--u)*12); font-size:max(calc(var(--u)*16), 13px); color:var(--muted); letter-spacing:.06em}
 .howNote::before, .howNote::after{content:""; flex:1; height:1px; background:rgba(231,184,102,.35)}
+#btnIntroReplay{align-self:center}
+
+/* ── イントロ（初回の任務開始で1回。遊び方から見直せる）。画面は9:16固定なので背景は全体を見せる ── */
+#ovIntro{background:#04060C; z-index:6; overflow:hidden; touch-action:none; cursor:pointer}
+.introBg{position:absolute; inset:0; background-size:cover; background-position:center; opacity:0; transition:opacity 1.2s ease}
+.introBg.on{opacity:1}
+.introBg.pan{animation:introPan 24s ease-out forwards}
+#introBg1{background-image:url("assets/intro/intro_city_lovers.jpg"); transform-origin:50% 45%}
+#introBg2{background-image:url("assets/intro/intro_agent_back.jpg"); transform-origin:60% 35%}
+@keyframes introPan{from{transform:scale(1)}to{transform:scale(1.08)}}
+#introShade{position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(180deg, rgba(4,6,12,.35) 0%, rgba(4,6,12,0) 16%, rgba(4,6,12,0) 52%, rgba(4,6,12,.72) 68%, rgba(4,6,12,.9) 100%)}
+#btnIntroSkip{position:absolute; right:calc(var(--u)*18); top:calc(var(--u)*18 + env(safe-area-inset-top)); z-index:1;
+  display:flex; align-items:center; gap:calc(var(--u)*8); padding:calc(var(--u)*9) calc(var(--u)*16);
+  border:1px solid rgba(231,184,102,.7); border-radius:calc(var(--u)*8); background:rgba(10,14,28,.7);
+  color:var(--text); font-family:var(--body); font-weight:700; font-size:max(calc(var(--u)*19), 15px); cursor:pointer}
+#btnIntroSkip::after{content:"▶▶"; font-size:.7em; letter-spacing:-.12em; color:var(--gold)}
+#btnIntroSkip:focus-visible{outline:calc(var(--u)*2) solid var(--cold); outline-offset:calc(var(--u)*2)}
+#introText{position:absolute; left:calc(var(--u)*30); right:calc(var(--u)*30); bottom:15%; min-height:22%;
+  display:flex; flex-direction:column; justify-content:flex-end; gap:calc(var(--u)*12); text-align:center; pointer-events:none}
+#introText p{margin:0; font-weight:500; font-size:max(calc(var(--u)*22), 15px); line-height:1.6; letter-spacing:.06em; color:#E7EEFB;
+  text-shadow:0 calc(var(--u)*2) calc(var(--u)*10) rgba(0,0,0,.95); opacity:0; animation:introLine .9s ease-out forwards}
+#introText .ph{display:inline-block}
+#introText .q{font-weight:700; font-size:max(calc(var(--u)*27), 17px); color:#F3E7CF}
+/* キメの台詞はロゴと同じ書体で */
+#introText .big{font-family:var(--disp); font-weight:400; font-size:max(calc(var(--u)*46), 26px); line-height:1.25; letter-spacing:.08em; color:var(--cold);
+  text-shadow:0 0 calc(var(--u)*18) rgba(220,238,255,.35), 0 calc(var(--u)*3) calc(var(--u)*12) rgba(0,0,0,.95)}
+#introText .big::after{content:""; display:block; width:56%; height:calc(var(--u)*3); margin:calc(var(--u)*8) auto 0;
+  background:linear-gradient(90deg, transparent, var(--alert), transparent); box-shadow:0 0 calc(var(--u)*10) rgba(255,74,92,.7)}
+#introText.done p{animation:none; opacity:1}
+@keyframes introLine{from{opacity:0; transform:translateY(calc(var(--u)*10))}to{opacity:1; transform:none}}
+#introPrompt{position:absolute; left:0; right:0; bottom:calc(6% + env(safe-area-inset-bottom)); text-align:center; pointer-events:none;
+  font-family:var(--body); font-weight:700; font-size:max(calc(var(--u)*17), 15px); letter-spacing:.14em; color:var(--gold); opacity:0; transition:opacity .4s}
+#introPrompt.on{opacity:1; animation:introBlink 1.6s ease-in-out .4s infinite}
+@keyframes introBlink{0%,100%{opacity:1}50%{opacity:.45}}
+#introDots{position:absolute; left:0; right:0; bottom:calc(10.5% + env(safe-area-inset-bottom)); display:flex; justify-content:center; gap:calc(var(--u)*8); pointer-events:none}
+#introDots i{width:calc(var(--u)*7); height:calc(var(--u)*7); border-radius:50%; background:rgba(231,238,251,.25)}
+#introDots i.on{background:var(--gold)}
 
 /* ── ステージ選択 ── */
 #stageList{display:grid; gap:calc(var(--u)*9); overflow-y:auto; padding-right:calc(var(--u)*2)}
@@ -530,7 +568,8 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
     <symbol id="i-scope" viewBox="0 0 48 48"><path d="M13 12h7l1 8h6l1-8h7l5 20a8 8 0 1 1-15 3.6V26h-2v9.6A8 8 0 1 1 8 32zM13.2 30.8a4.4 4.4 0 1 0 .1 0zm21.6 0a4.4 4.4 0 1 0 .1 0z" fill-rule="evenodd"/></symbol>
     <symbol id="i-route" viewBox="0 0 48 48"><ellipse cx="8" cy="35" rx="3.4" ry="5" transform="rotate(-14 8 35)"/><ellipse cx="15.4" cy="29" rx="3.2" ry="4.8" transform="rotate(-14 15.4 29)"/><circle cx="22" cy="36" r="1.6"/><circle cx="27" cy="33.6" r="1.6"/><circle cx="31.6" cy="30" r="1.6"/><path d="M38 6a7 7 0 0 1 7 7c0 5.6-7 13.4-7 13.4S31 18.6 31 13a7 7 0 0 1 7-7zm0 4.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6z" fill-rule="evenodd"/></symbol>
     <symbol id="i-camera" viewBox="0 0 48 48"><path d="M17 10h14l3 5h7a3 3 0 0 1 3 3v19a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V18a3 3 0 0 1 3-3h7zm7 9a8 8 0 1 0 0 16 8 8 0 0 0 0-16z" fill-rule="evenodd"/><circle cx="24" cy="27" r="4.4"/></symbol>
-    <symbol id="i-spark" viewBox="0 0 48 48"><path d="M40 4l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M12 1.8a10.2 10.2 0 1 1 0 20.4 10.2 10.2 0 0 1 0-20.4zm0 1.8a8.4 8.4 0 1 0 0 16.8 8.4 8.4 0 0 0 0-16.8z" fill-rule="evenodd"/><path d="M9.6 7.4l7.4 4.6-7.4 4.6z"/></symbol>
+    <symbol id="i-spark"viewBox="0 0 48 48"><path d="M40 4l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/></symbol>
   </svg>
 
   <!-- タイトル -->
@@ -578,9 +617,21 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
       <div class="howTip"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#i-route"/></svg><p><span class="ph">遠回りでも、</span><span class="ph">安全なルートを選ぼう</span></p></div>
       <div class="howTip"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#i-camera"/></svg><p><span class="ph">カップルの「3、2、1」に</span><span class="ph">合わせて工作すれば</span><span class="ph">ジャスト妨害</span></p></div>
       <div class="howTip"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#i-deer"/><use href="#i-spark"/></svg><p><span class="ph">金色のトナカイは、</span><span class="ph">時間延長のチャンス</span></p></div>
+      <button class="linkBtn" id="btnIntroReplay"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg><span>イントロをもう一度見る</span></button>
       <button class="btn cta" id="btnHowGo"><span id="howGoLabel">タイトルへ戻る</span><i class="tri" aria-hidden="true"></i></button>
       <div class="howNote">ゲーム中も一時停止メニューから確認できます</div>
     </div>
+  </section>
+
+  <!-- イントロ（文章は game.js の INTRO。タップで次へ） -->
+  <section id="ovIntro" class="ov" aria-label="イントロダクション">
+    <div class="introBg" id="introBg1"></div>
+    <div class="introBg" id="introBg2"></div>
+    <div id="introShade"></div>
+    <button id="btnIntroSkip">スキップ</button>
+    <div id="introText" aria-live="polite"></div>
+    <div id="introDots" aria-hidden="true"></div>
+    <div id="introPrompt" aria-hidden="true"></div>
   </section>
 
   <!-- Android の戻る操作で開く終了確認 -->

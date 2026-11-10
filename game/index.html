@@ -29,6 +29,8 @@
   /* 9:16 の枠は上下に黒帯が出る。安全領域のうち、枠に重なる分だけを使う（黒帯で足りる端末は 0） */
   --safe-t:max(0px, calc(env(safe-area-inset-top) - (100dvh - min(100dvh, 100vw * 16 / 9)) / 2));
   --safe-b:max(0px, calc(env(safe-area-inset-bottom) - (100dvh - min(100dvh, 100vw * 16 / 9)) / 2));
+  /* 一時停止ボタンは最小44px。幅の狭い画面ではその下のムード表示にかかるので、かかる分だけ下の表示を下げる（広い画面では 0） */
+  --hud-d:max(0px, calc(44px - var(--u) * 42));
   --disp:"Dela Gothic One","Noto Sans JP",sans-serif;
   --hud:"Chakra Petch","Noto Sans JP","Chakra Petch Fallback",system-ui,sans-serif;
   --body:"Noto Sans JP",system-ui,sans-serif;
@@ -85,7 +87,7 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
 #timeBox small{display:block; font-size:calc(var(--u)*10); letter-spacing:.2em; color:var(--muted); font-weight:600}
 #timeBox.warn{color:var(--alert)}
 
-#moodWrap{position:absolute; top:calc(var(--u)*62 + var(--safe-t)); left:calc(var(--u)*14); right:calc(var(--u)*14)}
+#moodWrap{position:absolute; top:calc(var(--u)*62 + var(--safe-t) + var(--hud-d)); left:calc(var(--u)*14); right:calc(var(--u)*14)}
 #moodLabel{display:flex; justify-content:space-between; align-items:baseline; font-size:calc(var(--u)*11); letter-spacing:.18em; color:var(--muted); margin-bottom:calc(var(--u)*5)}
 #moodPct{font-size:max(calc(var(--u)*18), 15px); font-weight:700; font-variant-numeric:tabular-nums; color:var(--gold); letter-spacing:0}
 #moodBar{position:relative; height:calc(var(--u)*13); border:1px solid var(--line); border-radius:calc(var(--u)*3); background:rgba(8,11,22,.72); overflow:hidden}
@@ -97,7 +99,7 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
 #moodTicks i{flex:1; border-right:1px solid rgba(10,14,28,.6)}
 #moodTicks i:last-child{border:0}
 
-#eye{position:absolute; top:calc(var(--u)*110 + var(--safe-t)); right:calc(var(--u)*14); width:calc(var(--u)*46); text-align:center; opacity:0; transition:opacity .25s}
+#eye{position:absolute; top:calc(var(--u)*110 + var(--safe-t) + var(--hud-d)); right:calc(var(--u)*14); width:calc(var(--u)*46); text-align:center; opacity:0; transition:opacity .25s}
 #eye.on{opacity:1}
 #eyeRing{position:relative; width:calc(var(--u)*46); height:calc(var(--u)*46); border-radius:50%;
   background:conic-gradient(var(--alert) var(--deg,0deg), rgba(38,49,79,.5) 0deg);
@@ -107,7 +109,7 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
 #eyeTxt{margin-top:calc(var(--u)*3); font-size:calc(var(--u)*9); letter-spacing:.14em; color:var(--alert)}
 
 #comboTag{
-  position:absolute; top:calc(var(--u)*112 + var(--safe-t)); left:calc(var(--u)*14);
+  position:absolute; top:calc(var(--u)*112 + var(--safe-t) + var(--hud-d)); left:calc(var(--u)*14);
   font-family:var(--disp); font-size:calc(var(--u)*26); color:var(--cold);
   text-shadow:0 0 calc(var(--u)*18) rgba(220,238,255,.6); opacity:0; transform:translateY(calc(var(--u)*6));
   transition:opacity .18s, transform .18s}
@@ -130,7 +132,7 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
 #centerMsg.show{animation:pop 1.1s cubic-bezier(.2,.9,.25,1) forwards}
 
 #hint{
-  position:absolute; left:calc(var(--u)*22); right:calc(var(--u)*22); top:calc(var(--u)*172 + var(--safe-t));
+  position:absolute; left:calc(var(--u)*22); right:calc(var(--u)*22); top:calc(var(--u)*172 + var(--safe-t) + var(--hud-d));
   text-align:center; font-family:var(--body); font-size:max(calc(var(--u)*14), 14px); font-weight:500; color:var(--text);
   background:rgba(10,14,28,.78); border:1px solid var(--line); border-left:calc(var(--u)*3) solid var(--gold);
   border-radius:calc(var(--u)*8); padding:calc(var(--u)*9) calc(var(--u)*12);
@@ -363,18 +365,22 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
 #introDots i.on{background:var(--gold)}
 
 /* ── ステージ選択 ── */
-#stageList{display:grid; gap:calc(var(--u)*9); overflow-y:auto; padding-right:calc(var(--u)*2)}
+/* 文字は 15px 以上（年配の方にも読める大きさ） */
+#stageList{display:grid; gap:calc(var(--u)*10); overflow-y:auto; padding-right:calc(var(--u)*2)}
 .slot{
-  pointer-events:auto; display:grid; grid-template-columns:auto 1fr auto; align-items:center;
+  pointer-events:auto; display:grid; grid-template-columns:auto 1fr fit-content(28%); align-items:center;
   gap:calc(var(--u)*12); text-align:left; width:100%;
   border:1px solid var(--line); border-radius:calc(var(--u)*11); background:rgba(20,27,48,.75);
   padding:calc(var(--u)*13) calc(var(--u)*14); color:var(--text); cursor:pointer; font-family:var(--body)}
-.slot .no{font-family:var(--hud); font-size:calc(var(--u)*13); letter-spacing:.1em; color:var(--gold)}
+.slot .no{font-family:var(--hud); font-size:max(calc(var(--u)*16), 14px); letter-spacing:.1em; color:var(--gold)}
 /* 名前とテーマは2行に分ける（span のままだと1行につながる） */
-.slot .nm{display:block; font-weight:700; font-size:calc(var(--u)*16)}
-.slot .th{display:block; font-size:calc(var(--u)*11); color:var(--muted); margin-top:calc(var(--u)*2)}
-.slot .best{font-family:var(--hud); font-size:calc(var(--u)*11); color:var(--muted); text-align:right; line-height:1.5}
-.slot .best b{display:block; font-family:var(--disp); font-size:calc(var(--u)*19); color:var(--cold)}
+.slot .nm{display:block; font-weight:700; font-size:max(calc(var(--u)*21), 16px)}
+.slot .th{display:block; font-size:max(calc(var(--u)*16), 15px); line-height:1.4; color:var(--muted); margin-top:calc(var(--u)*3)}
+.slot .th .ph{display:inline-block}
+#btnSelBack{font-size:max(calc(var(--u)*19), 15px)}
+.slot .best{font-family:var(--body); font-size:max(calc(var(--u)*15), 15px); color:var(--muted); text-align:right; line-height:1.4}
+.slot .best .ph{display:inline-block}
+.slot .best b{display:block; font-family:var(--disp); font-size:max(calc(var(--u)*24), 19px); color:var(--cold)}
 .slot[disabled]{opacity:.38; cursor:default}
 
 /* ── 結果（通常成功・全任務達成） ── */
@@ -498,7 +504,7 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
 .slot.special{border-color:rgba(90,150,255,.7); background:linear-gradient(90deg, rgba(27,63,168,.35), rgba(20,27,48,.75))}
 .slot.special .no{color:#9CC4FF}
 .slot.ending .no{color:#FFB3D1}
-.slot .best b.new{font-family:var(--hud); font-size:12px; color:#FFB3D1; letter-spacing:.14em}
+.slot .best b.new{font-family:var(--hud); font-size:15px; color:#FFB3D1; letter-spacing:.14em}
 
 /* ── 設定 ── */
 .set{display:flex; justify-content:space-between; align-items:center; gap:calc(var(--u)*12);
@@ -662,7 +668,7 @@ canvas#view{position:absolute; inset:0; width:100%; height:100%; display:block; 
     <div class="pad">
       <div class="eyebrow">MISSION SELECT</div>
       <div id="stageList"></div>
-      <button class="btn ghost" id="btnSelBack">タイトルへ戻る</button>
+      <button class="btn" id="btnSelBack">タイトルへ戻る</button>
     </div>
   </section>
 

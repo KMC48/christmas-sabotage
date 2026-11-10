@@ -3105,6 +3105,8 @@
 
   function buildStageList() {
     const list = $('stageList');
+    /* 説明は句ごとに区切り、言葉の途中で改行しない */
+    const ph = (...parts) => parts.map((s) => '<span class="ph">' + s + '</span>').join('');
     list.innerHTML = '';
     NORMAL.forEach((s, i) => {
       const b = document.createElement('button');
@@ -3116,9 +3118,9 @@
       b.innerHTML =
         '<span class="no">0' + s.id + '</span>' +
         '<span><span class="nm">' + (open ? s.name : '???') + '</span>' +
-        '<span class="th">' + (open ? s.theme + '　/　制限 ' + s.time + '秒' : '前のステージをクリアで解放') + '</span></span>' +
+        '<span class="th">' + (open ? ph(s.theme + '　/　', '制限 ' + s.time + '秒') : ph('前のステージを', 'クリアで解放')) + '</span></span>' +
         '<span class="best">' + (best ? '<b>' + best.rank + '</b>' + best.score.toLocaleString()
-          : old ? '<b>–</b>旧版クリア済み' : open ? '<b>–</b>未挑戦' : '') + '</span>';
+          : old ? '<b>–</b>' + ph('旧版', 'クリア済み') : open ? '<b>–</b>未挑戦' : '') + '</span>';
       b.addEventListener('click', () => { if (open) { Audio2.se.ui(); startStage(i); } });
       list.appendChild(b);
     });
@@ -3129,7 +3131,7 @@
       const b = document.createElement('button');
       b.className = 'slot special';
       b.innerHTML = '<span class="no">SP</span><span><span class="nm">' + sp.name + '</span>'
-        + '<span class="th">' + sp.theme + '　/　イルミ ' + sp.targets.length + '個・制限 ' + sp.time + '秒</span></span>'
+        + '<span class="th">' + ph(sp.theme + '　/　', 'イルミ ' + sp.targets.length + '個・', '制限 ' + sp.time + '秒') + '</span></span>'
         + '<span class="best">' + (best ? '<b>' + best.rank + '</b>' + best.score.toLocaleString()
           : save.specialSeen ? '<b>–</b>未挑戦' : '<b class="new">NEW</b>') + '</span>';
       b.addEventListener('click', () => {
@@ -3213,7 +3215,7 @@
     const st = Math.max(0, it - r.top);                  // 枠に食い込む上の安全領域（CSS の --safe-t と同じ量）
     return {
       x0: Math.max(0, il - r.left),
-      y0: 190 * u + st,                                  // 一時停止・ムード・発見ゲージの帯（HUDは st だけ下がっている）
+      y0: 190 * u + st + Math.max(0, 44 - 42 * u),      // 一時停止・ムード・発見ゲージの帯（HUDは st と、CSS の --hud-d だけ下がっている）
       x1: Math.min(r.width, window.innerWidth - ir - r.left),
       y1: Math.min(r.height, window.innerHeight - ib - r.top),
     };

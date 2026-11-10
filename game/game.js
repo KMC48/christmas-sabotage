@@ -688,7 +688,8 @@
         seBus = ac.createGain(); seBus.gain.value = 0.5; seBus.connect(master);
         bgmBus = ac.createGain(); bgmBus.gain.value = 0.28; bgmBus.connect(master);
       }
-      if (ac.state === 'suspended') ac.resume();
+      /* 止まっていたら再開する（バックグラウンドでの suspend、iOS の電話・アラーム割り込みの interrupted も含む） */
+      if (ac.state !== 'running') { try { const p = ac.resume(); if (p && p.catch) p.catch(() => {}); } catch (e) { /* 再開できなければ次の操作で試す */ } }
       return ac;
     }
     function tone(freq, dur, type, gain, when, glideTo) {
@@ -832,6 +833,12 @@
       stopBgm: stopBgm,
       setIntensity(v) { intensity = clamp(v, 0, 1); },
       duck(on) { if (bgmBus && ac) bgmBus.gain.setTargetAtTime(on ? 0.08 : 0.28, ac.currentTime, 0.08); },
+      /* アプリがバックグラウンドへ行ったとき：予約済みの音も含めて止める。次の操作（ctx）で再開する */
+      suspend() {
+        stopBgm();
+        if (!ac || ac.state !== 'running') return;
+        try { const p = ac.suspend(); if (p && p.catch) p.catch(() => {}); } catch (e) { /* 止められない環境では BGM の停止だけ */ }
+      },
     };
     function stopBgm() { if (timer) { clearInterval(timer); timer = null; } }
   })();
@@ -3203,9 +3210,10 @@
     const it = parseFloat(cs.paddingTop) || 0, ir = parseFloat(cs.paddingRight) || 0;
     const ib = parseFloat(cs.paddingBottom) || 0, il = parseFloat(cs.paddingLeft) || 0;
     const u = r.width / W;
+    const st = Math.max(0, it - r.top);                  // 枠に食い込む上の安全領域（CSS の --safe-t と同じ量）
     return {
       x0: Math.max(0, il - r.left),
-      y0: Math.max(190 * u, it - r.top),                 // 一時停止・ムード・発見ゲージの帯
+      y0: 190 * u + st,                                  // 一時停止・ムード・発見ゲージの帯（HUDは st だけ下がっている）
       x1: Math.min(r.width, window.innerWidth - ir - r.left),
       y1: Math.min(r.height, window.innerHeight - ib - r.top),
     };
@@ -3527,7 +3535,9 @@
   function pauseForBackground() {
     releaseAll();
     if (G.state === 'playing' || G.state === 'ready') doPause();
-    else Audio2.stopBgm();
+    /* 一時停止中は BGM を小さく流し続ける作りなので、バックグラウンドへ行くときはここで止める
+       （Android はバックグラウンドでも WebView の音が鳴り続ける）。再開は「作戦に戻る」の startBgm */
+    Audio2.suspend();
   }
   async function exitAndroidApp() {
     if (!androidApp || exitPending || !$('ovExit').classList.contains('on')) return;

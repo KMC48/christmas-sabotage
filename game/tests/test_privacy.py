@@ -27,7 +27,7 @@ def main():
     assert 'クリスマス粉砕大作戦' in text
     assert 'OSのバックアップ' in text
     assert 'localStorage' in text
-    assert 'kmc.creativelab.info@gmail.com' in text, 'support contact (store support URL points to #contact)'
+    assert 'kmc.creativelab@gmail.com' in text, 'support contact (store support URL points to #contact)'
     assert 'id="contact"' in text
     assert 'データの収集なし' in text and 'データの収集・共有なし' in text, 'store declarations'
     assert '公開前' not in text, 'no unresolved placeholders'

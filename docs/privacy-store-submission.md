@@ -39,7 +39,7 @@
 
 ## 承認前の必須確認
 
-- [x] 運営者「KMC Creative Lab（運営者：ロベルトKMC）」、問い合わせ kmc.creativelab.info@gmail.com、制定日 2026-11-01 を反映（ドル現場防衛戦・推し診断と同じ決定）
+- [x] 運営者「KMC Creative Lab（運営者：ロベルトKMC）」、問い合わせ kmc.creativelab.info@gmail.com、制定日 2026-11-01 を反映（ドル現場防衛戦・推し診断と同じ決定）。2026-11-14 に問い合わせ先を kmc.creativelab@gmail.com へ変更
 - [ ] GitHub Pages設定と実際の公開経路、URLのHTTP 200・公開アクセスを確認
 - [ ] `npm ci && npm run sync` から `www` と両OSの同梱ファイル一致を確認
 - [ ] CIのWeb回帰テスト、Android/iOSビルド、アプリ内リンク・Android戻る動作のテストを確認
